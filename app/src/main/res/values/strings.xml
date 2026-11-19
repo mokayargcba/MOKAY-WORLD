@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Mokay World</string>
+    <string name="sign_in_with_google">Iniciar sesión con Google</string>
+    <string name="auth_tagline">AVENTURA EN MOKAYA</string>
+    <string name="auth_subtitle">Explora las 11 regiones junto a Boxy y Foskay con tu progreso guardado en la nube.</string>
+    <string name="auth_cloud_note">Tu mochila, grimorio, puzzles y misiones se sincronizan automáticamente.</string>
+    <string name="action_attack">Atacar</string>
+    <string name="action_dodge">Esquivar</string>
+    <string name="action_foskay">Foskay</string>
+    <string name="action_interact">Acción</string>
+    <string name="tab_backpack">Mochila</string>
+    <string name="tab_crafting">Crafteo</string>
+    <string name="tab_quests">Misiones</string>
+    <string name="tab_grimoire">Grimorio</string>
+</resources>

@@ -1,0 +1,6 @@
+{
+  "name": "Mokay World",
+  "description": "Aventura de mundo abierto 2D en Mokaya protagonizada por Boxy y Foskay, con animaciones estilo Cuphead y Zelda, crafteo, puzzles, libros con palabras clave y guardado en la nube.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

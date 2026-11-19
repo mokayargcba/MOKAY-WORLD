@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "GameSave": {
+      "title": "GameSave",
+      "description": "Cloud save state for Mokay World stored per authenticated user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase user UID owning this save."
+        },
+        "currentRegionId": {
+          "type": "string",
+          "description": "Active region identifier in Mokay World."
+        },
+        "playerX": {
+          "type": "number",
+          "description": "Current X coordinate of Boxy inside the region."
+        },
+        "playerY": {
+          "type": "number",
+          "description": "Current Y coordinate of Boxy inside the region."
+        },
+        "hp": {
+          "type": "integer",
+          "description": "Current health points."
+        },
+        "stamina": {
+          "type": "integer",
+          "description": "Current stamina energy."
+        },
+        "mana": {
+          "type": "integer",
+          "description": "Current magic reserve for summoning Foskay."
+        },
+        "inventory": {
+          "type": "object",
+          "description": "Map of item IDs to integer quantities."
+        },
+        "quickSlots": {
+          "type": "array",
+          "description": "Up to 3 quick-access consumable item IDs."
+        },
+        "collectedBookIds": {
+          "type": "array",
+          "description": "IDs of ancient books collected in the Grimoire."
+        },
+        "discoveredKeywords": {
+          "type": "array",
+          "description": "Unlocked gate keywords learned from collected books."
+        },
+        "discoveredRegions": {
+          "type": "array",
+          "description": "Visited or revealed region IDs on the world map."
+        },
+        "completedQuests": {
+          "type": "array",
+          "description": "Completed quest IDs."
+        },
+        "solvedPuzzleIds": {
+          "type": "array",
+          "description": "Solved environmental puzzle IDs."
+        },
+        "defeatedBossStages": {
+          "type": "array",
+          "description": "Defeated boss encounter stage IDs."
+        },
+        "unlockedGateIds": {
+          "type": "array",
+          "description": "Unlocked regional gate IDs."
+        },
+        "collectedForces": {
+          "type": "array",
+          "description": "Ancestral forces gathered (creatividad, valentia, curiosidad, amistad)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when save was first created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the latest cloud sync (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "currentRegionId",
+        "playerX",
+        "playerY",
+        "hp",
+        "stamina",
+        "mana",
+        "inventory",
+        "quickSlots",
+        "collectedBookIds",
+        "discoveredKeywords",
+        "discoveredRegions",
+        "completedQuests",
+        "solvedPuzzleIds",
+        "defeatedBossStages",
+        "unlockedGateIds",
+        "collectedForces",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/saves/{saveId}": {
+      "schema": { "$ref": "#/entities/GameSave" },
+      "description": "Per-user cloud save slot for Mokay World."
+    }
+  }
+}

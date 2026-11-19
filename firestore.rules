@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isBoundedStringList(arr, maxLen) {
+      return arr is list && arr.size() <= maxLen && (arr.size() == 0 || arr[0] is string);
+    }
+
+    function isValidGameSave(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.currentRegionId is string && data.currentRegionId.size() >= 1 && data.currentRegionId.size() <= 64 &&
+             data.playerX is number && data.playerX >= -10000 && data.playerX <= 10000 &&
+             data.playerY is number && data.playerY >= -10000 && data.playerY <= 10000 &&
+             data.hp is int && data.hp >= 0 && data.hp <= 500 &&
+             data.stamina is int && data.stamina >= 0 && data.stamina <= 500 &&
+             data.mana is int && data.mana >= 0 && data.mana <= 500 &&
+             data.inventory is map && data.inventory.size() <= 100 &&
+             isBoundedStringList(data.quickSlots, 5) &&
+             isBoundedStringList(data.collectedBookIds, 30) &&
+             isBoundedStringList(data.discoveredKeywords, 30) &&
+             isBoundedStringList(data.discoveredRegions, 20) &&
+             isBoundedStringList(data.completedQuests, 50) &&
+             isBoundedStringList(data.solvedPuzzleIds, 50) &&
+             isBoundedStringList(data.defeatedBossStages, 20) &&
+             isBoundedStringList(data.unlockedGateIds, 30) &&
+             isBoundedStringList(data.collectedForces, 10);
+    }
+
+    match /users/{userId}/saves/{saveId} {
+      allow get: if isOwner(userId) && isValidId(saveId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(saveId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'currentRegionId', 'playerX', 'playerY',
+                         'hp', 'stamina', 'mana', 'inventory', 'quickSlots',
+                         'collectedBookIds', 'discoveredKeywords', 'discoveredRegions',
+                         'completedQuests', 'solvedPuzzleIds', 'defeatedBossStages',
+                         'unlockedGateIds', 'collectedForces', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'currentRegionId', 'playerX', 'playerY',
+                         'hp', 'stamina', 'mana', 'inventory', 'quickSlots',
+                         'collectedBookIds', 'discoveredKeywords', 'discoveredRegions',
+                         'completedQuests', 'solvedPuzzleIds', 'defeatedBossStages',
+                         'unlockedGateIds', 'collectedForces', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidGameSave(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(saveId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidGameSave(incoming()) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'currentRegionId', 'playerX', 'playerY',
+                         'hp', 'stamina', 'mana', 'inventory', 'quickSlots',
+                         'collectedBookIds', 'discoveredKeywords', 'discoveredRegions',
+                         'completedQuests', 'solvedPuzzleIds', 'defeatedBossStages',
+                         'unlockedGateIds', 'collectedForces', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(saveId);
+    }
+  }
+}
