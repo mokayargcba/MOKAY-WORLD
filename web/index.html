@@ -702,6 +702,7 @@
   <div id="modalCard" class="modal-card"></div>
 </div>
 
+<script src="npc-data.js"></script>
 <script>
 (() => {
   'use strict';
@@ -1048,7 +1049,39 @@
     }
   };
 
+  const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+  const convertedAppTrees = {};
+  function appDialogueTree(id) {
+    if (convertedAppTrees[id]) return convertedAppTrees[id];
+    const src = (window.MOKAY_APP_DIALOGUES || {})[id];
+    if (!src) return null;
+    const nodes = {};
+    for (const [nid, n] of Object.entries(src.nodes || {})) {
+      nodes[nid] = {
+        mood: capitalize(n.mood || 'amigable'),
+        text: n.text,
+        choices: (n.choices || []).map(c => ({
+          id: c.id,
+          text: c.text,
+          tone: capitalize(c.tone || ''),
+          delta: c.relationshipDelta || 0,
+          next: c.nextNodeId || null,
+          ...(c.chispasBonus ? { chispas: c.chispasBonus } : {})
+        }))
+      };
+    }
+    convertedAppTrees[id] = {
+      start: src.startNodeId,
+      high: src.highAffinityStartNodeId,
+      low: src.lowAffinityStartNodeId,
+      nodes
+    };
+    return convertedAppTrees[id];
+  }
+
   function getDialogueTree(npc) {
+    const appTree = appDialogueTree(npc.id);
+    if (appTree && appTree.nodes[appTree.start]) return appTree;
     if (DIALOGUE_TREES[npc.id]) return DIALOGUE_TREES[npc.id];
     return {
       start: 's', high: 'warm', low: 'cold',
@@ -1551,6 +1584,52 @@
       ]
     }
   };
+
+  // Replace the placeholder web NPCs with the full cast from the Android app,
+  // keeping web quest wiring where an NPC id already had one.
+  (function mergeAppNpcs() {
+    const appNpcs = window.MOKAY_APP_NPCS || {};
+    const questIds = new Set(QUESTS.map(q => q.id));
+    const usedQuests = new Set();
+    for (const [rid, reg] of Object.entries(REGIONS)) {
+      const list = appNpcs[rid];
+      if (!list || !list.length) continue;
+      const webById = Object.fromEntries((reg.npcs || []).map(n => [n.id, n]));
+      const merged = list.map(a => {
+        const w = webById[a.id] || {};
+        const questId = w.questId || (questIds.has(a.questId) ? a.questId : undefined);
+        if (questId) usedQuests.add(questId);
+        return {
+          ...a,
+          color: w.color || '#B7B0E6',
+          ...(questId ? { questId } : { questId: undefined })
+        };
+      });
+      for (const w of reg.npcs || []) {
+        if (w.questId && !usedQuests.has(w.questId)) {
+          const host = merged.find(n => !n.questId) || merged[0];
+          host.questId = w.questId;
+          usedQuests.add(w.questId);
+        }
+      }
+      reg.npcs = merged;
+    }
+  })();
+
+  const NPC_SPRITES = (() => {
+    const cache = {};
+    return (src) => {
+      if (!src) return null;
+      let im = cache[src];
+      if (!im) {
+        im = new Image();
+        im.decoding = 'async';
+        im.src = src;
+        cache[src] = im;
+      }
+      return im.complete && im.naturalWidth > 0 ? im : null;
+    };
+  })();
 
   const MAP_LINKS = [
     ['constelaria', 'plaza_infinita'],
@@ -2601,8 +2680,305 @@
     };
   }
 
-  // CANVAS 2D GAME RENDERER (Original Boxy + Foskay Inside Box + Cuphead/Zelda World)
-  function drawBoxy(x, y, phase, dir, actionKind, actionT, exhausted, foskayOut, hurtT = 0, flashT = 0, invulnT = 0, isRunning = false) {
+  // ORIGINAL APP SPRITES (ported from MokaySpriteBank.kt / CupheadSpriteRenderer.kt)
+  const BOXY_SPRITES = (() => {
+    const files = {
+      torsoFront: 'sprite_boxy_torso_front', torsoBack: 'sprite_boxy_torso_back',
+      torso34: 'sprite_boxy_torso_34', torsoProfile: 'sprite_boxy_torso_profile',
+      shoeFront: 'sprite_boxy_shoe_front', shoeSide: 'sprite_boxy_shoe_side',
+      foskayFront: 'sprite_foskay_front', foskayHero: 'sprite_foskay_hero',
+      face_happy: 'sprite_boxy_face_happy', face_excited: 'sprite_boxy_face_excited',
+      face_angry: 'sprite_boxy_face_angry', face_surprised: 'sprite_boxy_face_surprised',
+      face_wink: 'sprite_boxy_face_wink', face_tired: 'sprite_boxy_face_tired',
+      face_determined: 'sprite_boxy_face_determined', face_laugh: 'sprite_boxy_face_laugh'
+    };
+    const bank = { ready: false, failed: false, img: {} };
+    const keys = Object.keys(files);
+    let loaded = 0;
+    keys.forEach((k) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.decoding = 'async';
+      im.onload = () => { loaded++; if (loaded === keys.length) bank.ready = true; };
+      im.onerror = () => { bank.failed = true; };
+      im.src = 'sprites/' + files[k] + '.png';
+      bank.img[k] = im;
+    });
+    return bank;
+  })();
+
+  const tintCache = new Map();
+  function tintedSprite(img, color) {
+    const key = img.src + '|' + color;
+    let c = tintCache.get(key);
+    if (c) return c;
+    c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const tctx = c.getContext('2d');
+    tctx.drawImage(img, 0, 0);
+    tctx.globalCompositeOperation = 'source-atop';
+    tctx.fillStyle = color;
+    tctx.fillRect(0, 0, c.width, c.height);
+    tintCache.set(key, c);
+    return c;
+  }
+
+  function drawOriginalSprite(img, cx, bottomY, h, { flip = false, sx = 1, sy = 1, rot = 0, alpha = 1, tint = null } = {}) {
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+    const w = h * (iw / Math.max(1, ih));
+    ctx.save();
+    ctx.translate(cx, bottomY);
+    if (rot) { ctx.translate(0, -h * 0.45); ctx.rotate(rot * Math.PI / 180); ctx.translate(0, h * 0.45); }
+    ctx.scale((flip ? -1 : 1) * sx, sy);
+    if (alpha !== 1) ctx.globalAlpha *= alpha;
+    ctx.drawImage(img, -w / 2, -h, w, h);
+    if (tint) ctx.drawImage(tintedSprite(img, tint), -w / 2, -h, w, h);
+    ctx.restore();
+  }
+
+  function pickBoxyExpression(anim, phase) {
+    switch (anim) {
+      case 'ATTACK': return 'angry';
+      case 'DODGE': return 'surprised';
+      case 'FATIGUED': return 'tired';
+      case 'FOSKAY': return 'excited';
+      case 'MOVE': return 'determined';
+      default: {
+        const cycle = phase % 22;
+        if (cycle >= 10 && cycle <= 12.2) return 'laugh';
+        if (cycle >= 19.5 && cycle <= 21.2) return 'wink';
+        return null;
+      }
+    }
+  }
+
+  function drawFoskayInsideBox(x, rimY, phase, isHero) {
+    const S = BOXY_SPRITES.img;
+    const bob = Math.sin(phase * 2.8) * 2.2;
+    const cy = rimY - 20 + bob;
+    const g = ctx.createRadialGradient(x, cy, 0, x, cy, 38);
+    g.addColorStop(0, 'rgba(255,194,77,0.65)');
+    g.addColorStop(0.5, 'rgba(255,106,61,0.25)');
+    g.addColorStop(1, 'rgba(255,106,61,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, cy, 38, 0, Math.PI * 2); ctx.fill();
+    drawOriginalSprite(isHero ? S.foskayHero : S.foskayFront, x, rimY + 12 + bob, isHero ? 56 : 52, {
+      sx: 1 + Math.sin(phase * 3.4) * 0.03, sy: 1 - Math.sin(phase * 3.4) * 0.03
+    });
+  }
+
+  function drawBoxyLegsAndShoes(cx, hipY, groundY, dir, anim, stride, actionT) {
+    const S = BOXY_SPRITES.img;
+    const isSide = dir === 'left' || dir === 'right';
+    const shoe = isSide ? S.shoeSide : S.shoeFront;
+    const shoeH = 11.5;
+    const spread = anim === 'ATTACK' || anim === 'FOSKAY' ? 12.5 : anim === 'DODGE' ? 14 : 9.2;
+    let l, r, lt = 0, rt = 0;
+    if (anim === 'MOVE') {
+      const lw = Math.sin(stride), rw = Math.sin(stride + Math.PI);
+      if (isSide) {
+        l = [cx + lw * 12.5, groundY - Math.max(0, Math.cos(stride)) * 8.5];
+        r = [cx + rw * 12.5, groundY - Math.max(0, Math.cos(stride + Math.PI)) * 8.5];
+        lt = lw * 16; rt = rw * 16;
+      } else {
+        l = [cx - spread, groundY - Math.max(0, lw) * 7.5];
+        r = [cx + spread, groundY - Math.max(0, rw) * 7.5];
+        lt = -Math.max(0, lw) * 9; rt = Math.max(0, rw) * 9;
+      }
+    } else if (anim === 'DODGE') {
+      const lag = dir === 'left' ? 1 : -1;
+      l = [cx - spread * 0.6 + lag * 7, groundY - 6];
+      r = [cx + spread * 0.6 + lag * 2, groundY - 3];
+      lt = lag * 22; rt = lag * 14;
+    } else if (anim === 'ATTACK') {
+      const ps = Math.sin(actionT * Math.PI) * 6;
+      l = [cx - spread - ps * 0.4, groundY];
+      r = [cx + spread + ps * 0.4, groundY];
+      lt = -8; rt = 8;
+    } else {
+      l = [cx - (isSide ? 3 : spread), groundY];
+      r = [cx + (isSide ? 3 : spread), groundY];
+    }
+    const hipL = cx - (isSide ? 2.5 : 7.5);
+    const hipR = cx + (isSide ? 2.5 : 7.5);
+    ctx.save();
+    ctx.strokeStyle = '#141215';
+    ctx.lineWidth = 4.6; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(hipL, hipY);
+    ctx.quadraticCurveTo((hipL + l[0]) * 0.5 - (dir === 'right' ? 2 : -2), (hipY + l[1]) * 0.5, l[0], l[1] - shoeH * 0.45);
+    ctx.moveTo(hipR, hipY);
+    ctx.quadraticCurveTo((hipR + r[0]) * 0.5 + (dir === 'left' ? -2 : 2), (hipY + r[1]) * 0.5, r[0], r[1] - shoeH * 0.45);
+    ctx.stroke();
+    ctx.restore();
+    drawOriginalSprite(shoe, l[0], l[1], shoeH, { flip: isSide ? dir === 'left' : true, rot: lt });
+    drawOriginalSprite(shoe, r[0], r[1], shoeH, { flip: isSide ? dir === 'left' : false, rot: rt });
+  }
+
+  function drawBoxy(x, y, phase, dir, actionKind, actionTimer, exhausted, foskayOut, hurtT = 0, flashT = 0, invulnT = 0, isRunning = false) {
+    if (!BOXY_SPRITES.ready) {
+      drawBoxyVector(x, y, phase, dir, actionKind, actionTimer, exhausted, foskayOut, hurtT, flashT, invulnT, isRunning);
+      return;
+    }
+    const S = BOXY_SPRITES.img;
+    const anim = actionKind === 'attack' ? 'ATTACK'
+      : actionKind === 'dodge' ? 'DODGE'
+      : foskayOut > 0 ? 'FOSKAY'
+      : actionKind === 'walk' ? 'MOVE'
+      : exhausted ? 'FATIGUED' : 'IDLE';
+    const duration = actionKind === 'attack' ? 0.24 : actionKind === 'dodge' ? 0.22 : 1;
+    const actionT = Math.min(1, Math.max(0, 1 - actionTimer / duration));
+    const runMul = isRunning && anim === 'MOVE' ? 1.6 : 1;
+    const stride = phase * 2.25 * runMul;
+    const dsx = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;
+    const dsy = dir === 'back' ? -1 : dir === 'front' ? 1 : 0;
+    const isHurt = hurtT > 0;
+    const hurtP = isHurt ? Math.min(1, hurtT / 0.34) : 0;
+
+    ctx.save();
+    if (invulnT > 0 && isHurt && flashT <= 0 && Math.floor(invulnT * 22) % 2 === 0) ctx.globalAlpha = 0.48;
+
+    const lunge = anim === 'ATTACK'
+      ? (actionT < 0.25 ? -actionT * 20 : Math.sin(((actionT - 0.25) / 0.75) * Math.PI) * 14)
+      : 0;
+    const drawX = x + dsx * lunge + (isHurt ? Math.sin(hurtP * 46) * 4.5 * hurtP : 0);
+    const groundY = y + 28 + dsy * lunge * 0.45;
+
+    let bounce;
+    switch (anim) {
+      case 'MOVE': bounce = -Math.abs(Math.sin(stride)) * (isRunning ? 7.5 : 5.8); break;
+      case 'FATIGUED': bounce = Math.sin(phase * 0.85) * 2 + 1.5; break;
+      case 'DODGE': bounce = -6.5; break;
+      case 'ATTACK': bounce = actionT < 0.25 ? 2.5 : -4.5 * Math.sin(actionT * Math.PI); break;
+      case 'FOSKAY': bounce = -3.5 + Math.sin(phase * 3) * 1.6; break;
+      default: bounce = Math.sin(phase * 0.9) * 1.4;
+    }
+    let sqx, sqy;
+    switch (anim) {
+      case 'DODGE': sqx = 1.24; sqy = 0.80; break;
+      case 'FATIGUED': sqx = 1.08; sqy = 0.91; break;
+      case 'ATTACK':
+        sqx = actionT < 0.25 ? 1.14 : 0.94 + Math.sin(actionT * Math.PI) * 0.14;
+        sqy = actionT < 0.25 ? 0.86 : 1.07 - Math.sin(actionT * Math.PI) * 0.07; break;
+      case 'MOVE': sqx = 1 + Math.cos(stride * 2) * 0.045; sqy = 1 - Math.cos(stride * 2) * 0.045; break;
+      default: sqx = 1 + Math.sin(phase * 0.9) * 0.025; sqy = 1 - Math.sin(phase * 0.9) * 0.025;
+    }
+    if (isHurt) { sqx *= 1 + 0.2 * hurtP; sqy *= 1 - 0.18 * hurtP; }
+    let lean;
+    switch (anim) {
+      case 'FATIGUED': lean = 7.5; break;
+      case 'DODGE': lean = dir === 'left' ? -18 : 18; break;
+      case 'ATTACK': lean = dir === 'left' ? -11 : dir === 'right' ? 11 : (actionT < 0.25 ? -4 : 6); break;
+      case 'MOVE': lean = dsx !== 0 ? dsx * (isRunning ? 11 : 7.5) + Math.sin(stride) * 2.5 : Math.sin(stride) * 3.8; break;
+      default: lean = Math.sin(phase * 0.7) * 1.2;
+    }
+    if (isHurt) lean += Math.sin(hurtP * 24) * 8 * hurtP;
+
+    const shadowScale = Math.min(1.08, Math.max(0.76, 1 - Math.abs(bounce) * 0.022));
+    ctx.fillStyle = 'rgba(0,0,0,0.30)';
+    ctx.beginPath();
+    ctx.ellipse(drawX, groundY, 24 * shadowScale, 6.25, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (anim === 'MOVE' || anim === 'DODGE') {
+      const da = anim === 'DODGE' ? 0.45 : isRunning ? 0.4 : 0.28;
+      for (let p = 0; p <= 2; p++) {
+        const age = (phase * 0.75 * runMul + p * 0.33) % 1;
+        ctx.fillStyle = `rgba(244,231,209,${(da * (1 - age)).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(drawX - dsx * (14 + age * 26) + (p - 1) * 7, groundY - age * 10 - 2, 3.5 + age * 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    const isSideMove = dsx !== 0 && (anim === 'MOVE' || anim === 'DODGE');
+    const torso = dir === 'front' ? S.torsoFront
+      : dir === 'back' ? S.torsoBack
+      : isSideMove ? S.torsoProfile : S.torso34;
+    const flipTorso = dir === 'left' ? isSideMove : dir === 'right' ? !isSideMove : false;
+    const torsoH = 60;
+    const hipY = groundY - 15.5 + bounce;
+    const torsoW = torsoH * (torso.naturalWidth / Math.max(1, torso.naturalHeight));
+    const flashTint = flashT > 0 ? (Math.floor(flashT * 30) % 2 === 0 ? 'rgba(255,255,255,0.85)' : 'rgba(255,138,138,0.7)') : null;
+    const bodyTint = flashTint || (anim === 'FATIGUED' ? 'rgba(123,143,166,0.24)' : null);
+
+    if (anim === 'DODGE') {
+      [[0.24, 24], [0.14, 44]].forEach(([a, lag]) => {
+        drawOriginalSprite(torso, drawX - dsx * lag, hipY, torsoH, { flip: flipTorso, sx: sqx, sy: sqy, rot: lean, alpha: a, tint: 'rgba(183,176,230,0.5)' });
+      });
+    }
+
+    if (runtime.foskayLightTimer > 0) {
+      const gy = hipY - torsoH * 0.85;
+      const g = ctx.createRadialGradient(drawX, gy, 0, drawX, gy, 56);
+      g.addColorStop(0, 'rgba(255,194,77,0.56)');
+      g.addColorStop(0.5, 'rgba(255,106,61,0.24)');
+      g.addColorStop(1, 'rgba(255,106,61,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(drawX, gy, 56, 0, Math.PI * 2); ctx.fill();
+    }
+    if (foskayOut > 0) {
+      const t = Math.min(1, foskayOut / 1.6);
+      const emerge = Math.min(1, (1 - t) * 5) * Math.min(1, t * 4);
+      if (emerge > 0.01) drawFoskayInsideBox(drawX, hipY - torsoH * 0.82 - emerge * 36, phase, anim === 'FOSKAY' && emerge > 0.6);
+    }
+
+    drawBoxyLegsAndShoes(drawX, hipY - 2, groundY, dir, anim, stride, actionT);
+    drawOriginalSprite(torso, drawX, hipY, torsoH, { flip: flipTorso, sx: sqx, sy: sqy, rot: lean, tint: bodyTint });
+
+    if (dir === 'front') {
+      const expr = isHurt ? 'surprised' : pickBoxyExpression(anim, phase);
+      const face = expr ? S['face_' + expr] : null;
+      if (face) {
+        const sw = torsoW * sqx, sh = torsoH * sqy;
+        const fl = drawX - sw * 0.5 + sw * 0.356;
+        const ft = hipY - sh + sh * 0.304;
+        const fw = sw * 0.432, fh = sh * 0.452;
+        ctx.save();
+        ctx.translate(drawX, hipY - sh * 0.45);
+        ctx.rotate(lean * Math.PI / 180);
+        ctx.translate(-drawX, -(hipY - sh * 0.45));
+        ctx.fillStyle = '#9C90CE';
+        ctx.beginPath(); ctx.roundRect(fl, ft, fw, fh, 4); ctx.fill();
+        ctx.drawImage(face, fl, ft, fw, fh);
+        ctx.restore();
+      }
+    }
+
+    if (anim === 'FATIGUED') {
+      const cy = hipY - torsoH * 0.5;
+      const dropY = -28 + ((phase * 8) % 10);
+      [[-22, dropY, 3.2], [23, dropY - 4, 2.7]].forEach(([ox, oy, r]) => {
+        const tx = drawX + ox, ty = cy + oy;
+        ctx.fillStyle = '#6FD0E8'; ctx.strokeStyle = '#1A1A1A'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(tx, ty - r * 1.6);
+        ctx.quadraticCurveTo(tx + r * 1.3, ty, tx, ty + r);
+        ctx.quadraticCurveTo(tx - r * 1.3, ty, tx, ty - r * 1.6);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      });
+    }
+
+    if (anim === 'ATTACK') {
+      const cy = y + 2;
+      const start = (dir === 'right' ? -52 : dir === 'left' ? 128 : dir === 'back' ? -140 : 38) + actionT * 24;
+      const sweep = 130 * Math.min(1, Math.max(0.35, Math.sin(Math.max(0.05, actionT) * Math.PI)));
+      const rad = Math.PI / 180;
+      const g = ctx.createRadialGradient(drawX, cy, 0, drawX, cy, 74);
+      g.addColorStop(0, '#FFFFFF'); g.addColorStop(0.45, '#FFC24D'); g.addColorStop(0.75, '#FF6A3D'); g.addColorStop(1, 'rgba(255,106,61,0)');
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = g; ctx.lineWidth = 9.5;
+      ctx.beginPath(); ctx.arc(drawX, cy, 54, start * rad, (start + sweep) * rad); ctx.stroke();
+      ctx.strokeStyle = `rgba(255,255,255,${((1 - actionT) * 0.75).toFixed(3)})`; ctx.lineWidth = 3.2;
+      ctx.beginPath(); ctx.arc(drawX, cy, 46, (start + 14) * rad, (start + 14 + sweep * 0.7) * rad); ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  // Vector fallback used until the original sprites finish loading
+  function drawBoxyVector(x, y, phase, dir, actionKind, actionT, exhausted, foskayOut, hurtT = 0, flashT = 0, invulnT = 0, isRunning = false) {
     ctx.save();
     const isHurt = hurtT > 0;
     const isFlash = flashT > 0;
@@ -4131,7 +4507,93 @@
     ctx.restore();
   }
 
+  // Living flora ported from CupheadSpriteRenderer.kt (drawLivingFlora)
   function drawBiomeFlora(fl, animPhase, regionId) {
+    const p = animPhase + (fl.phase || 0);
+    const tint = fl.tint || '#39A96B';
+    const ink = '#1A1A1A';
+    ctx.save();
+    ctx.translate(fl.x, fl.y);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (fl.kind === 'tree') {
+      const s = fl.scale;
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.beginPath(); ctx.ellipse(0, 16 * s, 30 * s, 10 * s, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.scale(s * (1 + Math.sin(p * 1.5) * 0.045), s * (1 - Math.sin(p * 1.5) * 0.04));
+      ctx.rotate(Math.sin(p * 1.2) * 3.5 * Math.PI / 180);
+      ctx.beginPath();
+      ctx.moveTo(-14, 9); ctx.quadraticCurveTo(-9, -4, -9.5, -26);
+      ctx.lineTo(9.5, -26); ctx.quadraticCurveTo(9, -4, 14, 9); ctx.closePath();
+      ctx.fillStyle = regionId === 'tintopolis' ? '#333338' : '#6B442A'; ctx.fill();
+      ctx.strokeStyle = '#472A18'; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(-2, -20); ctx.lineTo(-3, 6); ctx.stroke();
+      ctx.strokeStyle = ink;
+      ctx.beginPath();
+      ctx.moveTo(-14, 9); ctx.quadraticCurveTo(-9, -4, -9.5, -26);
+      ctx.lineTo(9.5, -26); ctx.quadraticCurveTo(9, -4, 14, 9); ctx.closePath(); ctx.stroke();
+      const dark = shadeHex(tint, 0.75), light = shadeHex(tint, 1.25);
+      [[-19, -34, 20, dark], [19, -34, 20, tint], [0, -28, 22, dark], [0, -49, 25, tint], [-6, -55, 14, light]].forEach(([cx, cy, r, col]) => {
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+        if (r >= 20) ctx.stroke();
+      });
+      ctx.fillStyle = 'rgba(255,255,255,0.88)';
+      ctx.beginPath(); ctx.arc(-6, -34, 3.4, 0, Math.PI * 2); ctx.arc(6, -34, 3.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = ink;
+      ctx.beginPath(); ctx.arc(-5.5, -34, 1.7, 0, Math.PI * 2); ctx.arc(5.5, -34, 1.7, 0, Math.PI * 2); ctx.fill();
+    } else if (fl.kind === 'flower') {
+      const sway = Math.sin(p * 1.8) * 6.5;
+      const by = Math.sin(p * 3.6) * 2;
+      ctx.scale(fl.scale, fl.scale);
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath(); ctx.ellipse(0, 0.5, 11, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#2E8B57'; ctx.lineWidth = 3.6;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(sway * 0.6, -11, sway * 0.85, -23 + by); ctx.stroke();
+      const hx = sway * 0.85, hy = -24 + by;
+      ctx.lineWidth = 1.4; ctx.strokeStyle = ink;
+      for (let i = 0; i < 6; i++) {
+        const a = (i * 60 + sway * 1.5) * Math.PI / 180;
+        ctx.fillStyle = tint;
+        ctx.beginPath(); ctx.arc(hx + Math.cos(a) * 7.8, hy + Math.sin(a) * 7.8, 5.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+      ctx.fillStyle = '#FFC24D'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(hx, hy, 5.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = ink;
+      ctx.beginPath(); ctx.arc(hx - 1.9, hy - 1, 1.2, 0, Math.PI * 2); ctx.arc(hx + 1.9, hy - 1, 1.2, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = 1.1;
+      ctx.beginPath(); ctx.ellipse(hx, hy + 1.6, 2.5, 1.4, 0, 15 * Math.PI / 180, 165 * Math.PI / 180); ctx.stroke();
+    } else if (fl.kind === 'coral' || fl.kind === 'crystal_root') {
+      ctx.scale(fl.scale, fl.scale);
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.beginPath(); ctx.ellipse(0, 2.5, 14, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.rotate(Math.sin(p * 1.9) * 4 * Math.PI / 180);
+      ctx.beginPath();
+      ctx.moveTo(-11, 0); ctx.quadraticCurveTo(-10, -15, -7, -25);
+      ctx.quadraticCurveTo(-2, -22, 0, -15); ctx.quadraticCurveTo(3, -25, 7, -29);
+      ctx.quadraticCurveTo(11, -14, 12, 0); ctx.closePath();
+      ctx.fillStyle = fl.tint || (fl.kind === 'coral' ? '#FF6B6B' : '#72EFDD'); ctx.fill();
+      ctx.strokeStyle = ink; ctx.lineWidth = 2.4; ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.42)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(3, -23); ctx.lineTo(5, -6); ctx.stroke();
+    } else {
+      const sq = 1 + Math.sin(p * 2.1) * 0.06;
+      ctx.scale(fl.scale * sq, fl.scale * (2 - sq));
+      ctx.fillStyle = 'rgba(0,0,0,0.22)';
+      ctx.beginPath(); ctx.ellipse(0, 3, 20, 5, 0, 0, Math.PI * 2); ctx.fill();
+      const base = fl.kind === 'ink_fern' ? (fl.tint || '#2F3A33') : tint;
+      ctx.strokeStyle = ink;
+      [[-9.5, -7, 13.5, 0.8, 1.8], [9.5, -7, 13.5, 0.85, 1.8], [0, -14.5, 15.5, 1, 2.1]].forEach(([cx, cy, r, f, lw]) => {
+        ctx.fillStyle = shadeHex(base, f); ctx.lineWidth = lw;
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      });
+      ctx.fillStyle = 'rgba(255,255,255,0.24)';
+      ctx.beginPath(); ctx.arc(-4, -19, 6, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Previous web-only flora style, kept for reference while the port is in progress
+  function drawBiomeFloraLegacy(fl, animPhase, regionId) {
     const sway = Math.sin(animPhase + fl.phase) * 3;
     ctx.save();
     ctx.translate(fl.x, fl.y);
@@ -4611,6 +5073,21 @@
           ctx.save();
           ctx.translate(n.x, n.y + bob);
           ctx.scale(scaleX, scaleY);
+          const spriteImg = NPC_SPRITES(n.sprite);
+          let labelLift = 29;
+          if (spriteImg) {
+            const targetH = 74;
+            const sw = targetH * (spriteImg.naturalWidth / spriteImg.naturalHeight);
+            if (isGreeting) {
+              ctx.strokeStyle = 'rgba(255, 194, 77, 0.62)'; ctx.lineWidth = 2.2;
+              ctx.beginPath(); ctx.ellipse(0, 22, 24 + Math.abs(greetWave) * 2.5, 8, 0, 0, Math.PI * 2); ctx.stroke();
+            }
+            const facesLeft = state.px < n.x - 10;
+            if (facesLeft) ctx.scale(-1, 1);
+            ctx.drawImage(spriteImg, -sw / 2, 22 - targetH, sw, targetH);
+            labelLift = targetH - 14;
+          }
+          if (!spriteImg) {
           if (isGreeting) {
             ctx.strokeStyle = 'rgba(255, 194, 77, 0.62)'; ctx.lineWidth = 2.2;
             ctx.beginPath(); ctx.arc(0, 0, 23 + Math.abs(greetWave) * 2.5, 0, Math.PI * 2); ctx.stroke();
@@ -4647,14 +5124,15 @@
           ctx.fill();
           ctx.strokeStyle = '#1A1A1A'; ctx.lineWidth = 1.6;
           ctx.beginPath(); ctx.arc(lookX * 0.4, 4.5 + lookY * 0.3, 4.2, 0.15, Math.PI - 0.15); ctx.stroke();
+          }
           ctx.restore();
 
           const lblTxt = isGreeting ? `👋 ${n.name}` : n.name;
           ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
           ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(15,11,28,0.92)';
-          ctx.strokeText(lblTxt, n.x, n.y - 29 + bob);
+          ctx.strokeText(lblTxt, n.x, n.y - labelLift + bob);
           ctx.fillStyle = '#FFC24D';
-          ctx.fillText(lblTxt, n.x, n.y - 29 + bob);
+          ctx.fillText(lblTxt, n.x, n.y - labelLift + bob);
         }
       });
     }

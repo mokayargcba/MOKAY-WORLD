@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "",
-  "buildCommand": "rm -rf dist && mkdir -p dist && cp -R public/. dist/ && cp web/index.html dist/index.html",
+  "buildCommand": "rm -rf dist && mkdir -p dist && cp -R public/. dist/ && cp -R web/. dist/",
   "outputDirectory": "dist",
   "cleanUrls": true,
   "headers": [
