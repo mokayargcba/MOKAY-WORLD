@@ -105,9 +105,53 @@ internal fun buildTier1Regions(): List<RegionSpec> = listOf(
         ),
         puzzles = emptyList(),
         npcs = listOf(
-            NpcSpec("npc_llave", "La Llave", "Guía de Portales", CharacterVisual.LA_LLAVE, RegionId.PLAZA_INFINITA, 470f, 540f, "¡Bienvenido a Mokaya, Boxy! Lee libros para hallar palabras clave y abrir los puentes."),
-            NpcSpec("npc_star", "Star", "Inspirador", CharacterVisual.STAR, RegionId.PLAZA_INFINITA, 730f, 540f, "Si te quedas sin estamina te cansarás: bebe Café B&W o Té Zen. ¡Usa a Foskay con tu Magia!"),
-            NpcSpec("npc_cit_plaza", "Ratz Urbano", "Ciudadano de Plaza", CharacterVisual.CITIZEN_RATZ, RegionId.PLAZA_INFINITA, 390f, 760f, "Empieza por Tintópolis al noroeste o Marea Viva al sur.")
+            NpcSpec(
+                id = "npc_llave",
+                name = "La Llave",
+                role = "Guía de Portales",
+                visual = CharacterVisual.LA_LLAVE,
+                regionId = RegionId.PLAZA_INFINITA,
+                x = 910f,
+                y = 435f,
+                dialogue = "¡Bienvenido al Arco de los Puentes! Lee los libros de cada distrito para hallar palabras clave y abrir los portales.",
+                villageName = "Arco de los Puentes",
+                offersShop = true
+            ),
+            NpcSpec(
+                id = "npc_star",
+                name = "Star",
+                role = "Inspirador del Café",
+                visual = CharacterVisual.STAR,
+                regionId = RegionId.PLAZA_INFINITA,
+                x = 430f,
+                y = 295f,
+                dialogue = "Si te quedas sin estamina te cansarás: pasa por Café Estrella o usa Té Zen. ¡Invoca a Foskay cuando necesites luz!",
+                villageName = "Barrio Café Estrella"
+            ),
+            NpcSpec(
+                id = "npc_cit_plaza",
+                name = "Ratz Urbano",
+                role = "Anfitrión de Posada",
+                visual = CharacterVisual.CITIZEN_RATZ,
+                regionId = RegionId.PLAZA_INFINITA,
+                x = 250f,
+                y = 700f,
+                dialogue = "¡La Posada Chispa está abierta para exploradores! Lee la Crónica en la fuente y reúnete conmigo con provisiones.",
+                questId = "q_plaza_spark",
+                villageName = "Aldea Posada Chispa"
+            ),
+            NpcSpec(
+                id = "npc_plaza_terra",
+                name = "Terra Jardinera",
+                role = "Mercader Botánica",
+                visual = CharacterVisual.CITIZEN_TERRA,
+                regionId = RegionId.PLAZA_INFINITA,
+                x = 850f,
+                y = 775f,
+                dialogue = "Aquí en el Mirador Sur intercambio provisiones por Chispas para tu viaje hacia Marea Viva.",
+                villageName = "Mirador Sur",
+                offersShop = true
+            )
         ),
         enemies = emptyList(),
         gates = listOf(
@@ -196,9 +240,54 @@ internal fun buildTier1Regions(): List<RegionSpec> = listOf(
         ),
         puzzles = emptyList(),
         npcs = listOf(
-            NpcSpec("npc_bloom", "Bloom", "Artista Urbana", CharacterVisual.BLOOM, RegionId.TINTOPOLIS, 370f, 720f, "¡Laughing Cat tomó la Fuente de la Tinta! Derrótalo para recuperar el Códice de Tinta y devolver el color.", questId = "q_tintopolis_cat"),
-            NpcSpec("npc_laflor", "La Flor", "Espíritu Creativo", CharacterVisual.LA_FLOR, RegionId.TINTOPOLIS, 820f, 790f, "Incluso en blanco y negro, nuestras raíces bailan al ritmo de tu chispa."),
-            NpcSpec("npc_tinto_cit", "Beep Vintage", "Ciudadano Monocroma", CharacterVisual.CITIZEN_BEEP, RegionId.TINTOPOLIS, 480f, 320f, "El Teatro Mokay espera una nueva historia.")
+            NpcSpec(
+                id = "npc_bloom",
+                name = "Bloom",
+                role = "Artista Urbana",
+                visual = CharacterVisual.BLOOM,
+                regionId = RegionId.TINTOPOLIS,
+                x = 275f,
+                y = 735f,
+                dialogue = "¡Laughing Cat tomó la Fuente de la Tinta! Derrótalo para recuperar el Códice de Tinta y devolver el color a Tintópolis.",
+                questId = "q_tintopolis_cat",
+                villageName = "Barrio Café B&W"
+            ),
+            NpcSpec(
+                id = "npc_laflor",
+                name = "La Flor",
+                role = "Editora de Imprenta",
+                visual = CharacterVisual.LA_FLOR,
+                regionId = RegionId.TINTOPOLIS,
+                x = 890f,
+                y = 780f,
+                dialogue = "Necesitamos Tinta Antigua para imprimir el diario de Mokaya. ¡Si encuentras 2 frascos, te compensaré bien!",
+                questId = "q_tinto_press",
+                villageName = "Paseo de la Imprenta"
+            ),
+            NpcSpec(
+                id = "npc_tinto_cit",
+                name = "Beep Vintage",
+                role = "Proyeccionista",
+                visual = CharacterVisual.CITIZEN_BEEP,
+                regionId = RegionId.TINTOPOLIS,
+                x = 260f,
+                y = 335f,
+                dialogue = "El Cine Rubber proyecta clásicos de 1928 sin parar. ¿Necesitas un café o elixir antes de combatir?",
+                villageName = "Distrito Cine Rubber",
+                offersShop = true
+            ),
+            NpcSpec(
+                id = "npc_tinto_brew",
+                name = "Barista Brew",
+                role = "Maestro Tostador",
+                visual = CharacterVisual.CITIZEN_BREW,
+                regionId = RegionId.TINTOPOLIS,
+                x = 940f,
+                y = 345f,
+                dialogue = "El Teatro Mokay sirve el Café B&W más fuerte del archipiélago para quitarte cualquier fatiga.",
+                villageName = "Aldea del Teatro",
+                offersShop = true
+            )
         ),
         enemies = listOf(
             EnemySpawn("en_tinto_1", "Chispa Gris", EnemyVisual.CHISPA_ERRANTE, 440f, 450f, 45, 8, 95f, 1, dropItemId = "tinta_antigua"),
@@ -300,11 +389,65 @@ internal fun buildTier1Regions(): List<RegionSpec> = listOf(
             )
         ),
         npcs = listOf(
-            NpcSpec("npc_tula", "Tula", "Tortuga Sabia", CharacterVisual.TULA, RegionId.MAREA_VIVA, 520f, 680f, "Pisa las 3 placas brillantes junto a la Gruta de las Perlas para revelar el Tratado de Mareas.", questId = "q_marea_perla"),
-            NpcSpec("npc_finn", "Finn", "Pez Artista", CharacterVisual.FINN, RegionId.MAREA_VIVA, 420f, 340f, "¡Cada ola trae algas luminosas para tus pociones!"),
-            NpcSpec("npc_lumi", "Lumi", "Medusa DJ", CharacterVisual.LUMI, RegionId.MAREA_VIVA, 260f, 380f, "El Arrecife Musical vibra con luz bioluminiscente."),
-            NpcSpec("npc_octo", "Octo", "Pulpo Inventor", CharacterVisual.OCTO, RegionId.MAREA_VIVA, 840f, 380f, "Mis máquinas marinas ayudan a cruzar hacia Artelia."),
-            NpcSpec("npc_coraly", "Coraly", "Exploradora", CharacterVisual.CORALY, RegionId.MAREA_VIVA, 820f, 680f, "Puedes bajar por el Puerto hacia Arena Viva.")
+            NpcSpec(
+                id = "npc_tula",
+                name = "Tula",
+                role = "Tortuga Sabia",
+                visual = CharacterVisual.TULA,
+                regionId = RegionId.MAREA_VIVA,
+                x = 560f,
+                y = 755f,
+                dialogue = "Pisa las 3 placas brillantes junto a la Gruta de las Perlas para revelar el Tratado de Mareas.",
+                questId = "q_marea_perla",
+                villageName = "Bosque de Algas"
+            ),
+            NpcSpec(
+                id = "npc_finn",
+                name = "Finn",
+                role = "Pez Artista",
+                visual = CharacterVisual.FINN,
+                regionId = RegionId.MAREA_VIVA,
+                x = 600f,
+                y = 260f,
+                dialogue = "¡Desde Plaza Coral contemplo cada marea! Si quieres provisiones marinas, revisa mi puesto.",
+                villageName = "Plaza Coral Norte",
+                offersShop = true
+            ),
+            NpcSpec(
+                id = "npc_lumi",
+                name = "Lumi",
+                role = "Medusa DJ",
+                visual = CharacterVisual.LUMI,
+                regionId = RegionId.MAREA_VIVA,
+                x = 220f,
+                y = 325f,
+                dialogue = "El Arrecife Musical vibra con luz bioluminiscente. ¡Baila al ritmo del agua!",
+                villageName = "Aldea Arrecife Musical"
+            ),
+            NpcSpec(
+                id = "npc_octo",
+                name = "Octo",
+                role = "Pulpo Inventor",
+                visual = CharacterVisual.OCTO,
+                regionId = RegionId.MAREA_VIVA,
+                x = 945f,
+                y = 335f,
+                dialogue = "En la Torre de las Corrientes necesito x2 Alga Luminosa para calibrar las boyas hacia Artelia.",
+                questId = "q_marea_algae",
+                villageName = "Torre de las Corrientes"
+            ),
+            NpcSpec(
+                id = "npc_coraly",
+                name = "Coraly",
+                role = "Exploradora del Muelle",
+                visual = CharacterVisual.CORALY,
+                regionId = RegionId.MAREA_VIVA,
+                x = 945f,
+                y = 795f,
+                dialogue = "El Puerto Coral conecta hacia Arena Viva al oeste. Equípate bien antes de zarpar.",
+                villageName = "Puerto Coral",
+                offersShop = true
+            )
         ),
         enemies = listOf(
             EnemySpawn("en_marea_1", "Chispa Marina", EnemyVisual.CHISPA_ERRANTE, 650f, 550f, 50, 9, 95f, 1, dropItemId = "alga_luminosa"),

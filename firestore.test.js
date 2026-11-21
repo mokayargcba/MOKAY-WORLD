@@ -21,11 +21,15 @@ function validSavePayload(uid, nowMs = Date.now()) {
   return {
     userId: uid,
     currentRegionId: "plaza_infinita",
-    playerX: 500,
-    playerY: 500,
+    playerX: 900,
+    playerY: 740,
     hp: 100,
+    maxHp: 100,
     stamina: 100,
+    maxStamina: 100,
     mana: 80,
+    maxMana: 100,
+    chispas: 60,
     inventory: {
       slice_pizza: 2,
       cafe_bw: 2,
@@ -35,11 +39,20 @@ function validSavePayload(uid, nowMs = Date.now()) {
     collectedBookIds: ["libro_origen"],
     discoveredKeywords: ["CHISPA"],
     discoveredRegions: ["plaza_infinita"],
+    discoveredLandmarkIds: ["plaza_center"],
+    visitedVillages: ["Mirador Sur"],
+    activeQuestIds: ["q_tintopolis_cat"],
     completedQuests: [],
+    trackedQuestId: "q_tintopolis_cat",
     solvedPuzzleIds: [],
     defeatedBossStages: [],
     unlockedGateIds: [],
     collectedForces: [],
+    collectedPickupIds: ["pp_book"],
+    npcRelationships: {
+      npc_llave: 15,
+    },
+    unlockedAchievementIds: ["ach_explorer_3"],
     createdAt: ts,
     updatedAt: ts,
   };
@@ -104,8 +117,12 @@ test("Authenticated owner can create, read, list, and partially update their sav
       playerX: 640.5,
       playerY: 420.25,
       hp: 85,
+      maxHp: 115,
       stamina: 95,
+      maxStamina: 115,
       mana: 60,
+      maxMana: 100,
+      chispas: 185,
       inventory: {
         slice_pizza: 1,
         cafe_bw: 2,
@@ -113,14 +130,25 @@ test("Authenticated owner can create, read, list, and partially update their sav
         tinta_antigua: 3,
       },
       discoveredRegions: ["plaza_infinita", "tintopolis"],
+      discoveredLandmarkIds: ["plaza_center", "tm_fuente"],
+      visitedVillages: ["Mirador Sur", "Barrio Café B&W"],
+      activeQuestIds: ["q_tinto_press"],
+      completedQuests: ["q_tintopolis_cat"],
+      trackedQuestId: "q_tinto_press",
       defeatedBossStages: ["boss_1_cat"],
-      unlockedGateIds: ["gate_plaza_tintopolis"],
+      unlockedGateIds: ["gate_plaza_tinto"],
+      collectedPickupIds: ["pp_book", "tp_ink1"],
+      npcRelationships: {
+        npc_llave: 35,
+        npc_star: 10,
+      },
+      unlockedAchievementIds: ["ach_explorer_3", "ach_boss_first"],
       updatedAt: new Date(Date.now() - 500),
     })
   );
 });
 
-test("Rejects ghost fields, @DocumentId id field, immutable createdAt edits, and future timestamps", async () => {
+test("Rejects ghost fields, @DocumentId id field, immutable createdAt edits, out-of-range stats, and future timestamps", async () => {
   const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
   const savesCol = aliceDb.collection("users").doc(ALICE_UID).collection("saves");
 
@@ -134,10 +162,25 @@ test("Rejects ghost fields, @DocumentId id field, immutable createdAt edits, and
   withIdPayload.id = "main";
   await assertFails(savesCol.doc("with_id").set(withIdPayload));
 
+  // Reject out-of-range chispas/maxHp
+  const badStatsPayload = validSavePayload(ALICE_UID);
+  badStatsPayload.chispas = -10;
+  await assertFails(savesCol.doc("bad_stats").set(badStatsPayload));
+
   // Reject future timestamp
   const futurePayload = validSavePayload(ALICE_UID);
   futurePayload.updatedAt = new Date(Date.now() + 60000);
   await assertFails(savesCol.doc("future_save").set(futurePayload));
+
+  // Reject non-map npcRelationships
+  const badRelPayload = validSavePayload(ALICE_UID);
+  badRelPayload.npcRelationships = "invalid";
+  await assertFails(savesCol.doc("bad_rel").set(badRelPayload));
+
+  // Reject non-list unlockedAchievementIds
+  const badAchPayload = validSavePayload(ALICE_UID);
+  badAchPayload.unlockedAchievementIds = { invalid: true };
+  await assertFails(savesCol.doc("bad_ach").set(badAchPayload));
 
   // Create valid save, then attempt immutable createdAt update
   await assertSucceeds(savesCol.doc("main").set(validSavePayload(ALICE_UID)));

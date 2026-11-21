@@ -3,6 +3,6 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/mokay_world_icon_1795039039749"
+        android:drawable="@drawable/mokay_world_icon_1795111284554"
         android:gravity="center" />
 </layer-list>

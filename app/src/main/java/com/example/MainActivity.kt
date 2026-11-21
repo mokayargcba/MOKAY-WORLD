@@ -15,6 +15,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.auth.AuthScreen
 import com.example.auth.authStateFlow
 import com.example.data.firebase.SaveRepository
+import com.example.game.engine.DialogueManager
 import com.example.game.ui.MokayGameScreen
 import com.example.game.viewmodel.GameViewModel
 import com.example.ui.theme.MokayWorldTheme
@@ -52,7 +53,8 @@ fun AppNavigation() {
                         val dbId = app.getString(R.string.firestore_database_id)
                         GameViewModel(
                             saveRepository = SaveRepository(FirebaseFirestore.getInstance(dbId)),
-                            currentUserId = user.uid
+                            currentUserId = user.uid,
+                            dialogueManager = DialogueManager.fromAssets(app.assets)
                         )
                     }
                 }

@@ -94,9 +94,52 @@ internal fun buildTier2Regions(): List<RegionSpec> = listOf(
         ),
         puzzles = emptyList(),
         npcs = listOf(
-            NpcSpec("npc_clip", "Clip", "Beatmaker Mokay", CharacterVisual.CLIP, RegionId.RHYTHM_HOOD, 560f, 600f, "¡Dinamita y Molotov tomaron el Train Yard! Dales ritmo y recupera el Vinilo Maestro.", questId = "q_rhythm_duo"),
-            NpcSpec("npc_ratt", "Ratt", "Graffitero Mokay", CharacterVisual.RATT, RegionId.RHYTHM_HOOD, 280f, 390f, "Mi arte no sigue reglas, pero con tu chispa pintamos todo Mokaya."),
-            NpcSpec("npc_rh_cit", "Slice Urbano", "Ciudadano Rhythm", CharacterVisual.CITIZEN_SLICE, RegionId.RHYTHM_HOOD, 420f, 760f, "En Rhythm Hood la música recarga el ánimo.")
+            NpcSpec(
+                id = "npc_clip",
+                name = "Clip",
+                role = "Beatmaker Mokay",
+                visual = CharacterVisual.CLIP,
+                regionId = RegionId.RHYTHM_HOOD,
+                x = 580f,
+                y = 575f,
+                dialogue = "¡Dinamita y Molotov tomaron el Train Yard! Dales ritmo en su propio terreno y recupera el Vinilo Maestro.",
+                questId = "q_rhythm_duo",
+                villageName = "Beat Labs Central"
+            ),
+            NpcSpec(
+                id = "npc_ratt",
+                name = "Ratt",
+                role = "Graffitero Mokay",
+                visual = CharacterVisual.RATT,
+                regionId = RegionId.RHYTHM_HOOD,
+                x = 240f,
+                y = 335f,
+                dialogue = "Mi arte en el Muro Infinito no sigue reglas, pero con tu chispa pintamos todo Mokaya.",
+                villageName = "Aldea Muro Infinito"
+            ),
+            NpcSpec(
+                id = "npc_rh_cit",
+                name = "Slice Urbano",
+                role = "Chef de Skate Plaza",
+                visual = CharacterVisual.CITIZEN_SLICE,
+                regionId = RegionId.RHYTHM_HOOD,
+                x = 270f,
+                y = 805f,
+                dialogue = "Una buena rebanada en Skate Plaza recarga el ánimo al instante. ¡Mira mi puesto!",
+                villageName = "Villa Skate Plaza",
+                offersShop = true
+            ),
+            NpcSpec(
+                id = "npc_rh_static",
+                name = "Static Beat",
+                role = "DJ de Freestyle",
+                visual = CharacterVisual.STATIC,
+                regionId = RegionId.RHYTHM_HOOD,
+                x = 960f,
+                y = 795f,
+                dialogue = "En la Freestyle Arena mezclamos electricidad y compases para motivar a todo el distrito.",
+                villageName = "Freestyle Arena"
+            )
         ),
         enemies = listOf(
             EnemySpawn("en_rh_1", "Box Punk", EnemyVisual.BOX_ANTAGONISTA, 680f, 360f, 80, 13, 110f, 2, dropItemId = "slice_pizza"),
@@ -179,9 +222,41 @@ internal fun buildTier2Regions(): List<RegionSpec> = listOf(
         ),
         puzzles = emptyList(),
         npcs = listOf(
-            NpcSpec("npc_floko", "Floko", "El Inspirador", CharacterVisual.FLOKO, RegionId.ARENA_VIVA, 460f, 600f, "¡Cada idea puede crecer! Entrena tu esquiva para enfrentar al dúo de Rhythm Hood."),
-            NpcSpec("npc_coim", "Coim", "Generadora de Oportunidades", CharacterVisual.COIM, RegionId.ARENA_VIVA, 700f, 600f, "Recolecta Hojas de Cactus Zen aquí para craftear Té Zen y Frutos de Creación."),
-            NpcSpec("npc_av_cit", "Kickz Veloz", "Atleta Arena", CharacterVisual.CITIZEN_SPIKE, RegionId.ARENA_VIVA, 310f, 440f, "El Estadio mantiene la estamina al máximo.")
+            NpcSpec(
+                id = "npc_floko",
+                name = "Floko",
+                role = "Entrenador BMX",
+                visual = CharacterVisual.FLOKO,
+                regionId = RegionId.ARENA_VIVA,
+                x = 250f,
+                y = 335f,
+                dialogue = "¡Cada idea puede crecer! Entrena tu esquiva en el BMX Park y fortalece tu resistencia en mi tienda.",
+                villageName = "Aldea BMX Park",
+                offersShop = true
+            ),
+            NpcSpec(
+                id = "npc_coim",
+                name = "Coim",
+                role = "Generadora de Oportunidades",
+                visual = CharacterVisual.COIM,
+                regionId = RegionId.ARENA_VIVA,
+                x = 920f,
+                y = 360f,
+                dialogue = "Recolecta x2 Hoja de Cactus Zen por las canchas para preparar bebidas de campeonato.",
+                questId = "q_arena_zen",
+                villageName = "Villa Basket & Tenis"
+            ),
+            NpcSpec(
+                id = "npc_av_cit",
+                name = "Kickz Veloz",
+                role = "Atleta de Playa",
+                visual = CharacterVisual.CITIZEN_SPIKE,
+                regionId = RegionId.ARENA_VIVA,
+                x = 290f,
+                y = 795f,
+                dialogue = "Después de correr junto al mar en Playa Activa, nada supera un buen Té Zen.",
+                villageName = "Playa Activa"
+            )
         ),
         enemies = listOf(
             EnemySpawn("en_av_1", "Chispa Atleta", EnemyVisual.CHISPA_ERRANTE, 780f, 480f, 80, 12, 125f, 2, dropItemId = "hierba_zen")
@@ -268,8 +343,41 @@ internal fun buildTier2Regions(): List<RegionSpec> = listOf(
             )
         ),
         npcs = listOf(
-            NpcSpec("npc_vivi", "Vivi Mokay", "Exploradora Curiosa", CharacterVisual.VIVI, RegionId.PICASIA, 440f, 560f, "¡Empuja los bloques cubistas hacia las runas doradas en la Calle de la Ilusión para liberar el Prisma Cubista!"),
-            NpcSpec("npc_pc_cit", "Idea Cubista", "Ciudadano Picasia", CharacterVisual.CITIZEN_SPRAY, RegionId.PICASIA, 310f, 700f, "Aquí las ideas se rompen y crean algo nuevo.")
+            NpcSpec(
+                id = "npc_vivi",
+                name = "Vivi Mokay",
+                role = "Exploradora Curiosa",
+                visual = CharacterVisual.VIVI,
+                regionId = RegionId.PICASIA,
+                x = 910f,
+                y = 520f,
+                dialogue = "¡Empuja los 2 bloques cubistas hacia las runas doradas en la Calle de la Ilusión para liberar el Prisma Cubista!",
+                questId = "q_picasia_blocks",
+                villageName = "Calle de la Ilusión"
+            ),
+            NpcSpec(
+                id = "npc_pc_cit",
+                name = "Idea Cubista",
+                role = "Curadora del Anfiteatro",
+                visual = CharacterVisual.CITIZEN_SPRAY,
+                regionId = RegionId.PICASIA,
+                x = 265f,
+                y = 785f,
+                dialogue = "En el Anfiteatro Sur las formas se rompen y crean algo nuevo. Pasa por mi galería de intercambio.",
+                villageName = "Anfiteatro Sur",
+                offersShop = true
+            ),
+            NpcSpec(
+                id = "npc_pc_glitch",
+                name = "Glitch Geométrico",
+                role = "Ilusionista del Museo",
+                visual = CharacterVisual.GLITCH,
+                regionId = RegionId.PICASIA,
+                x = 255f,
+                y = 340f,
+                dialogue = "Si el mundo parece torcido en el Museo de lo Imposible, es señal de que estás mirando desde otro ángulo.",
+                villageName = "Museo de lo Imposible"
+            )
         ),
         enemies = listOf(
             EnemySpawn("en_pc_1", "Cubo Rebelde", EnemyVisual.CUBO_REBELDE, 620f, 280f, 85, 13, 105f, 2, dropItemId = "polvo_estelar")
@@ -366,8 +474,41 @@ internal fun buildTier2Regions(): List<RegionSpec> = listOf(
             )
         ),
         npcs = listOf(
-            NpcSpec("npc_zenkay", "Zenkay", "El Cactus Zen", CharacterVisual.ZENKAY, RegionId.ARTELIA, 480f, 580f, "La paz no es alejarse. Invoca a Foskay frente a cada antorcha en orden 1, 2 y 3 para despertar la sabiduría.", questId = "q_artelia_torches"),
-            NpcSpec("npc_ar_cit", "Shroom Maestro", "Ciudadano Artelia", CharacterVisual.CITIZEN_SHROOM, RegionId.ARTELIA, 830f, 760f, "La Biblioteca guarda el secreto para entrar a Sombravía sin miedo.")
+            NpcSpec(
+                id = "npc_zenkay",
+                name = "Zenkay",
+                role = "El Cactus Zen",
+                visual = CharacterVisual.ZENKAY,
+                regionId = RegionId.ARTELIA,
+                x = 240f,
+                y = 760f,
+                dialogue = "La paz no es alejarse. Invoca a Foskay frente a cada antorcha de la Biblioteca en orden 1, 2 y 3.",
+                questId = "q_artelia_torches",
+                villageName = "Jardines Geométricos"
+            ),
+            NpcSpec(
+                id = "npc_ar_cit",
+                name = "Shroom Maestro",
+                role = "Archivista de Galería",
+                visual = CharacterVisual.CITIZEN_SHROOM,
+                regionId = RegionId.ARTELIA,
+                x = 950f,
+                y = 755f,
+                dialogue = "La Galería de Maestros y la Biblioteca guardan secretos de luz. Aquí puedes abastecerte antes de Sombravía.",
+                villageName = "Galería de Maestros",
+                offersShop = true
+            ),
+            NpcSpec(
+                id = "npc_ar_obs",
+                name = "Brew Astrónomo",
+                role = "Guardián del Observatorio",
+                visual = CharacterVisual.CITIZEN_BREW,
+                regionId = RegionId.ARTELIA,
+                x = 235f,
+                y = 340f,
+                dialogue = "Desde este Observatorio trazamos la ruta estelar que une Artelia con Constelaria.",
+                villageName = "Observatorio de Ideas"
+            )
         ),
         enemies = listOf(
             EnemySpawn("en_ar_1", "Cubo Guardián", EnemyVisual.CUBO_REBELDE, 760f, 560f, 85, 13, 105f, 2, dropItemId = "polvo_estelar")
@@ -441,9 +582,41 @@ internal fun buildTier2Regions(): List<RegionSpec> = listOf(
         ),
         puzzles = emptyList(),
         npcs = listOf(
-            NpcSpec("npc_birdy", "Birdy", "El Soñador", CharacterVisual.BIRDY, RegionId.CONSTELARIA, 320f, 560f, "¿Y si volamos un poco más alto? Toma Polvo Estelar para craftear Pociones Estelares."),
-            NpcSpec("npc_nubi", "Nubi", "La Nube Bromista", CharacterVisual.NUBI, RegionId.CONSTELARIA, 820f, 560f, "¡JA JA JA! ¡Prepárate porque en Sombravía te esperan Laughing Cat y su amigo gigante!"),
-            NpcSpec("npc_cn_cit", "Puff Soñador", "Ciudadano Constelaria", CharacterVisual.CITIZEN_PUFF, RegionId.CONSTELARIA, 580f, 520f, "Las melodías de Birdy equilibran la energía.")
+            NpcSpec(
+                id = "npc_birdy",
+                name = "Birdy",
+                role = "El Soñador",
+                visual = CharacterVisual.BIRDY,
+                regionId = RegionId.CONSTELARIA,
+                x = 230f,
+                y = 560f,
+                dialogue = "¿Y si volamos un poco más alto? Reúne x2 Polvo Estelar en las nubes y craftea Pociones Estelares.",
+                questId = "q_constelaria_stars",
+                villageName = "Mirador de Nubes"
+            ),
+            NpcSpec(
+                id = "npc_nubi",
+                name = "Nubi",
+                role = "La Nube Bromista",
+                visual = CharacterVisual.NUBI,
+                regionId = RegionId.CONSTELARIA,
+                x = 915f,
+                y = 560f,
+                dialogue = "¡JA JA JA! ¡Desde Nube Tormenta veo Sombravía donde esperan Laughing Cat y Street Dino!",
+                villageName = "Nube Tormenta"
+            ),
+            NpcSpec(
+                id = "npc_cn_cit",
+                name = "Puff Soñador",
+                role = "Custodio del Palacio",
+                visual = CharacterVisual.CITIZEN_PUFF,
+                regionId = RegionId.CONSTELARIA,
+                x = 580f,
+                y = 315f,
+                dialogue = "En el Palacio de los Sueños intercambiamos reliquias luminosas para el último tramo de tu viaje.",
+                villageName = "Palacio de los Sueños",
+                offersShop = true
+            )
         ),
         enemies = listOf(
             EnemySpawn("en_cn_1", "Chispa Astral", EnemyVisual.CHISPA_ERRANTE, 580f, 360f, 95, 14, 120f, 2, dropItemId = "polvo_estelar")

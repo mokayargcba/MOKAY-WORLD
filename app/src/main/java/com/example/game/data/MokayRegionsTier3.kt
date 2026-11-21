@@ -93,9 +93,63 @@ internal fun buildTier3Regions(): List<RegionSpec> = listOf(
         ),
         puzzles = emptyList(),
         npcs = listOf(
-            NpcSpec("npc_douty", "Douty", "La Duda Eterna", CharacterVisual.DOUTY, RegionId.SOMBRAVIA, 280f, 390f, "¿Estás seguro? ¡Usa a Foskay para iluminar la oscuridad y avanzar sin miedo!"),
-            NpcSpec("npc_shade", "Shade", "Eco del Miedo", CharacterVisual.SHADE, RegionId.SOMBRAVIA, 820f, 700f, "Cuando iluminas tus sombras, se convierten en valor."),
-            NpcSpec("npc_vivi_sombra", "Vivi Mokay", "Exploradora", CharacterVisual.VIVI, RegionId.SOMBRAVIA, 240f, 620f, "Laughing Cat volvió junto a Street Dino en la Plaza del Reflejo. ¡Derrótalos!", questId = "q_sombravia_climax")
+            NpcSpec(
+                id = "npc_douty",
+                name = "Douty",
+                role = "La Duda Eterna",
+                visual = CharacterVisual.DOUTY,
+                regionId = RegionId.SOMBRAVIA,
+                x = 240f,
+                y = 340f,
+                dialogue = "¿Estás seguro en la Calle de las Dudas? ¡Usa a Foskay para iluminar la oscuridad y avanzar sin miedo!",
+                villageName = "Calle de las Dudas"
+            ),
+            NpcSpec(
+                id = "npc_shade",
+                name = "Shade",
+                role = "Eco del Laberinto",
+                visual = CharacterVisual.SHADE,
+                regionId = RegionId.SOMBRAVIA,
+                x = 1015f,
+                y = 365f,
+                dialogue = "Cuando iluminas tus miedos dentro del Laberinto, se convierten en valor puro.",
+                villageName = "Laberinto del Miedo"
+            ),
+            NpcSpec(
+                id = "npc_vivi_sombra",
+                name = "Vivi Mokay",
+                role = "Exploradora del Faro",
+                visual = CharacterVisual.VIVI,
+                regionId = RegionId.SOMBRAVIA,
+                x = 245f,
+                y = 830f,
+                dialogue = "Laughing Cat volvió junto a Street Dino en la Plaza del Reflejo. ¡Ilumina con Foskay y derrótalos!",
+                questId = "q_sombravia_climax",
+                villageName = "Faro de la Superación"
+            ),
+            NpcSpec(
+                id = "npc_masky",
+                name = "Masky",
+                role = "Actor de Máscaras",
+                visual = CharacterVisual.MASKY,
+                regionId = RegionId.SOMBRAVIA,
+                x = 945f,
+                y = 825f,
+                dialogue = "En el Teatro de las Máscaras vendemos tónicos estelares para que no caigas ante Street Dino.",
+                villageName = "Teatro de las Máscaras",
+                offersShop = true
+            ),
+            NpcSpec(
+                id = "npc_void",
+                name = "Void Vigía",
+                role = "Guardia de Estación",
+                visual = CharacterVisual.VOID,
+                regionId = RegionId.SOMBRAVIA,
+                x = 555f,
+                y = 760f,
+                dialogue = "La Estación Penumbra vigila la niebla entre Sombravía y Plaza Infinita.",
+                villageName = "Estación Penumbra"
+            )
         ),
         enemies = listOf(
             EnemySpawn("en_sm_1", "Sombra Glitch", EnemyVisual.SOMBRA_MENOR, 460f, 340f, 110, 16, 115f, 3, dropItemId = "cristal_sombra"),
@@ -177,7 +231,41 @@ internal fun buildTier3Regions(): List<RegionSpec> = listOf(
         ),
         puzzles = emptyList(),
         npcs = listOf(
-            NpcSpec("npc_bo_guard", "Rooty Explorador", "Guardián del Bosque", CharacterVisual.ROOTY, RegionId.BOSQUE_OLVIDADO, 520f, 480f, "Para activar el Portal Ancestral necesitas el Tomo del Árbol Original (MOKAYA) y las 4 fuerzas: Creatividad, Valentía, Curiosidad y Amistad.")
+            NpcSpec(
+                id = "npc_bo_guard",
+                name = "Rooty Explorador",
+                role = "Guardián del Círculo",
+                visual = CharacterVisual.ROOTY,
+                regionId = RegionId.BOSQUE_OLVIDADO,
+                x = 520f,
+                y = 515f,
+                dialogue = "Para activar el Portal Ancestral necesitas el Tomo del Árbol Original (MOKAYA), las 4 fuerzas y un Cristal de Eco.",
+                questId = "q_bosque_echo",
+                villageName = "Círculo de las Raíces"
+            ),
+            NpcSpec(
+                id = "npc_bo_terra",
+                name = "Terra Ancestral",
+                role = "Herbolaria del Musgo",
+                visual = CharacterVisual.CITIZEN_TERRA,
+                regionId = RegionId.BOSQUE_OLVIDADO,
+                x = 240f,
+                y = 350f,
+                dialogue = "Junto a las Raíces Gigantes preparo provisiones sagradas para quienes cruzan el Portal Ancestral.",
+                villageName = "Aldea Raíces Gigantes",
+                offersShop = true
+            ),
+            NpcSpec(
+                id = "npc_bo_sparky",
+                name = "Sparky Antiguo",
+                role = "Custodio de Ruinas",
+                visual = CharacterVisual.SPARKY,
+                regionId = RegionId.BOSQUE_OLVIDADO,
+                x = 940f,
+                y = 360f,
+                dialogue = "Las Ruinas Susurrantes guardan el Tomo del Árbol Original. ¡Lleva su palabra clave al portal!",
+                villageName = "Ruinas Susurrantes"
+            )
         ),
         enemies = listOf(
             EnemySpawn("en_bo_1", "Sombra Antigua", EnemyVisual.SOMBRA_MENOR, 740f, 340f, 120, 17, 115f, 3, dropItemId = "cristal_sombra")
@@ -257,10 +345,52 @@ internal fun buildTier3Regions(): List<RegionSpec> = listOf(
         ),
         puzzles = emptyList(),
         npcs = listOf(
-            NpcSpec("npc_lumen", "Lumen", "Guardián de la Luz", CharacterVisual.LUMEN, RegionId.ARBOL_ORIGINAL, 420f, 480f, "¡Bienvenido al Árbol Original, Boxy! Tu chispa y la de Foskay restauraron los 7 colores de la creatividad."),
-            NpcSpec("npc_sparky", "Sparky", "Guardián de la Chispa", CharacterVisual.SPARKY, RegionId.ARBOL_ORIGINAL, 740f, 480f, "De aquí nacen todas las ideas, personajes y regiones de Mokaya."),
-            NpcSpec("npc_rooty", "Rooty", "Guardián de las Raíces", CharacterVisual.ROOTY, RegionId.ARBOL_ORIGINAL, 420f, 740f, "Estamos conectados por raíces que atraviesan el tiempo y el espacio."),
-            NpcSpec("npc_nova", "Nova", "Guardiana de las Estrellas", CharacterVisual.NOVA, RegionId.ARBOL_ORIGINAL, 740f, 740f, "¡Una chispa puede cambiarlo todo!")
+            NpcSpec(
+                id = "npc_lumen",
+                name = "Lumen",
+                role = "Guardián de la Luz",
+                visual = CharacterVisual.LUMEN,
+                regionId = RegionId.ARBOL_ORIGINAL,
+                x = 240f,
+                y = 375f,
+                dialogue = "¡Bienvenido al Pabellón Luz, Boxy! Tu chispa y la de Foskay restauraron los 7 colores de la creatividad.",
+                questId = "q_arbol_harmony",
+                villageName = "Pabellón Luz"
+            ),
+            NpcSpec(
+                id = "npc_sparky",
+                name = "Sparky",
+                role = "Guardián de la Chispa",
+                visual = CharacterVisual.SPARKY,
+                regionId = RegionId.ARBOL_ORIGINAL,
+                x = 915f,
+                y = 375f,
+                dialogue = "Desde el Pabellón Chispa nacen todas las ideas, personajes y regiones de Mokaya.",
+                villageName = "Pabellón Chispa",
+                offersShop = true
+            ),
+            NpcSpec(
+                id = "npc_rooty",
+                name = "Rooty",
+                role = "Guardián de las Raíces",
+                visual = CharacterVisual.ROOTY,
+                regionId = RegionId.ARBOL_ORIGINAL,
+                x = 220f,
+                y = 635f,
+                dialogue = "Desde este Altar Raíces estamos conectados por la memoria a través del tiempo y el espacio.",
+                villageName = "Altar Raíces"
+            ),
+            NpcSpec(
+                id = "npc_nova",
+                name = "Nova",
+                role = "Guardiana de las Estrellas",
+                visual = CharacterVisual.NOVA,
+                regionId = RegionId.ARBOL_ORIGINAL,
+                x = 940f,
+                y = 635f,
+                dialogue = "En el Santuario Estelar brillará por siempre la lección de Mokaya: ¡una chispa puede cambiarlo todo!",
+                villageName = "Santuario Estelar"
+            )
         ),
         enemies = emptyList(),
         gates = listOf(

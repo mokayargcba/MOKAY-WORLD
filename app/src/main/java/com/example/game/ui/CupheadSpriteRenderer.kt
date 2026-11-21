@@ -606,26 +606,40 @@ private fun DrawScope.drawCupheadTree(
     val breathX = 1f + sin(phase * 1.5f) * 0.045f + sin(wiggle * 24f) * wiggle * 0.09f
     val breathY = 1f - sin(phase * 1.5f) * 0.04f
     val tilt = sin(phase * 1.2f) * 3.5f + sin(wiggle * 24f) * wiggle * 10f
-    drawOval(Color.Black.copy(alpha = 0.25f), Offset(x - 28f * scale, y + 6f * scale), Size(56f * scale, 18f * scale))
+    drawOval(Color.Black.copy(alpha = 0.28f), Offset(x - 30f * scale, y + 6f * scale), Size(60f * scale, 20f * scale))
     withTransform({
         translate(x, y)
         scale(scale * breathX, scale * breathY, Offset.Zero)
         rotate(tilt, Offset.Zero)
     }) {
         val trunk = Path().apply {
-            moveTo(-11f, 8f)
-            quadraticTo(-8f, -10f, -9f, -24f)
-            lineTo(9f, -24f)
-            quadraticTo(8f, -10f, 11f, 8f)
+            moveTo(-14f, 9f)
+            quadraticTo(-9f, -4f, -9.5f, -26f)
+            lineTo(9.5f, -26f)
+            quadraticTo(9f, -4f, 14f, 9f)
             close()
         }
         drawPath(trunk, Color(0xFF6B442A))
+        drawLine(Color(0xFF472A18), Offset(-2f, -20f), Offset(-3f, 6f), strokeWidth = 2.4f, cap = StrokeCap.Round)
         drawPath(trunk, InkBlack, style = InkOutline)
 
-        val puffs = listOf(Offset(-18f, -34f) to 20f, Offset(18f, -34f) to 20f, Offset(0f, -48f) to 24f, Offset(0f, -28f) to 22f)
-        puffs.forEach { (off, r) ->
-            drawCircle(canopyColor, radius = r, center = off)
-            drawCircle(InkBlack, radius = r, center = off, style = InkOutline)
+        val shadowCanopy = canopyColor.darken(0.75f)
+        val highlightCanopy = Color(
+            (canopyColor.red + 0.14f).coerceAtMost(1f),
+            (canopyColor.green + 0.14f).coerceAtMost(1f),
+            (canopyColor.blue + 0.14f).coerceAtMost(1f),
+            canopyColor.alpha
+        )
+        val puffs = listOf(
+            Triple(Offset(-19f, -34f), 20f, shadowCanopy),
+            Triple(Offset(19f, -34f), 20f, canopyColor),
+            Triple(Offset(0f, -28f), 22f, shadowCanopy),
+            Triple(Offset(0f, -49f), 25f, canopyColor),
+            Triple(Offset(-6f, -55f), 14f, highlightCanopy)
+        )
+        puffs.forEach { (off, r, col) ->
+            drawCircle(col, radius = r, center = off)
+            if (r >= 20f) drawCircle(InkBlack, radius = r, center = off, style = InkOutline)
         }
         drawCircle(Color.White.copy(alpha = 0.88f), radius = 3.4f, center = Offset(-6f, -34f))
         drawCircle(Color.White.copy(alpha = 0.88f), radius = 3.4f, center = Offset(6f, -34f))
@@ -647,12 +661,14 @@ private fun DrawScope.drawCupheadShrub(
         translate(x, y)
         scale(scale * sq, scale * (2f - sq), Offset.Zero)
     }) {
-        drawCircle(color, 13f, Offset(-9f, -7f))
-        drawCircle(InkBlack, 13f, Offset(-9f, -7f), style = Stroke(1.8f))
-        drawCircle(color, 13f, Offset(9f, -7f))
-        drawCircle(InkBlack, 13f, Offset(9f, -7f), style = Stroke(1.8f))
-        drawCircle(color, 15f, Offset(0f, -14f))
-        drawCircle(InkBlack, 15f, Offset(0f, -14f), style = Stroke(2.1f))
+        drawOval(Color.Black.copy(alpha = 0.22f), Offset(-20f, -2f), Size(40f, 10f))
+        drawCircle(color.darken(0.8f), 13.5f, Offset(-9.5f, -7f))
+        drawCircle(InkBlack, 13.5f, Offset(-9.5f, -7f), style = Stroke(1.8f))
+        drawCircle(color.darken(0.85f), 13.5f, Offset(9.5f, -7f))
+        drawCircle(InkBlack, 13.5f, Offset(9.5f, -7f), style = Stroke(1.8f))
+        drawCircle(color, 15.5f, Offset(0f, -14.5f))
+        drawCircle(InkBlack, 15.5f, Offset(0f, -14.5f), style = Stroke(2.1f))
+        drawCircle(Color.White.copy(alpha = 0.24f), 6f, Offset(-4f, -19f))
     }
 }
 
@@ -670,15 +686,17 @@ private fun DrawScope.drawCupheadCoralOrCrystal(
         scale(scale, scale, Offset.Zero)
         rotate(sway, Offset.Zero)
     }) {
+        drawOval(Color.Black.copy(alpha = 0.22f), Offset(-14f, -2f), Size(28f, 9f))
         val path = Path().apply {
-            moveTo(-10f, 0f)
-            quadraticTo(-9f, -14f, -6f, -24f)
+            moveTo(-11f, 0f)
+            quadraticTo(-10f, -15f, -7f, -25f)
             quadraticTo(-2f, -22f, 0f, -15f)
-            quadraticTo(3f, -24f, 6f, -28f)
-            quadraticTo(10f, -14f, 11f, 0f)
+            quadraticTo(3f, -25f, 7f, -29f)
+            quadraticTo(11f, -14f, 12f, 0f)
             close()
         }
         drawPath(path, color)
+        drawLine(Color.White.copy(alpha = 0.42f), Offset(3f, -23f), Offset(5f, -6f), strokeWidth = 2f, cap = StrokeCap.Round)
         drawPath(path, InkBlack, style = InkOutline)
     }
 }

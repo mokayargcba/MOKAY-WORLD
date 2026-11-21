@@ -241,7 +241,9 @@ data class NpcSpec(
     val x: Float,
     val y: Float,
     val dialogue: String,
-    val questId: String? = null
+    val questId: String? = null,
+    val villageName: String = "",
+    val offersShop: Boolean = false
 )
 
 enum class EnemyVisual {
@@ -300,8 +302,32 @@ data class QuestSpec(
     val requiredBookId: String? = null,
     val requiredBossStageId: String? = null,
     val requiredPuzzleId: String? = null,
+    val requiredRegionVisit: RegionId? = null,
+    val requiredForces: List<String> = emptyList(),
     val rewardItemId: String,
-    val rewardForce: String? = null
+    val rewardQuantity: Int = 2,
+    val rewardForce: String? = null,
+    val rewardChispas: Int = 60,
+    val rewardMaxHpBoost: Int = 0,
+    val rewardMaxStaminaBoost: Int = 0,
+    val rewardMaxManaBoost: Int = 0,
+    val consumeRequiredItem: Boolean = false,
+    val villageName: String = "",
+    val isMainStory: Boolean = false
+)
+
+enum class ShopUpgradeKind { MAX_HP, MAX_STAMINA, MAX_MANA }
+
+data class ShopOfferSpec(
+    val id: String,
+    val title: String,
+    val description: String,
+    val priceChispas: Int,
+    val itemId: String? = null,
+    val quantity: Int = 1,
+    val upgradeKind: ShopUpgradeKind? = null,
+    val upgradeAmount: Int = 0,
+    val minTier: Int = 1
 )
 
 data class RegionThemeColors(

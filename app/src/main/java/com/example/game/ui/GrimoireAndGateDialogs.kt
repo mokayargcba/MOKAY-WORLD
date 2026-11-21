@@ -20,7 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
@@ -55,7 +54,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.game.data.MokayWorldCatalog
 import com.example.game.engine.GameWorldState
 import com.example.game.model.GateSpec
-import com.example.game.model.NpcSpec
 import com.example.ui.theme.AntiqueGold
 import com.example.ui.theme.BoxyLavender
 import com.example.ui.theme.CardSlate
@@ -219,183 +217,6 @@ fun GrimoireDialog(
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun QuestLogDialog(
-    state: GameWorldState,
-    onDismiss: () -> Unit
-) {
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .widthIn(max = 720.dp)
-                .heightIn(max = 390.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = DeepTwilight),
-            border = BorderStroke(2.dp, RunicTeal.copy(alpha = 0.6f))
-        ) {
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Bitácora de Misiones",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = WarmParchment
-                    )
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Filled.Close, contentDescription = "Cerrar misiones", tint = WarmParchment)
-                    }
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(bottom = 8.dp)
-                ) {
-                    items(MokayWorldCatalog.quests, key = { it.id }) { quest ->
-                        val done = quest.id in state.completedQuests
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = CardSlate,
-                            border = BorderStroke(1.2.dp, if (done) StaminaEmerald else AntiqueGold.copy(alpha = 0.4f))
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = quest.title,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = if (done) StaminaEmerald else SparkGold
-                                        )
-                                        Text(
-                                            text = "${quest.regionId.title} • Encargo de ${quest.giverName}",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = BoxyLavender
-                                        )
-                                    }
-                                    if (done) {
-                                        Icon(
-                                            imageVector = Icons.Filled.CheckCircle,
-                                            contentDescription = "Completada",
-                                            tint = StaminaEmerald
-                                        )
-                                    }
-                                }
-                                Text(
-                                    text = quest.description,
-                                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
-                                    color = WarmParchment.copy(alpha = 0.9f)
-                                )
-                                val rewardName = MokayWorldCatalog.items[quest.rewardItemId]?.name ?: quest.rewardItemId
-                                Text(
-                                    text = "Recompensa: x2 $rewardName" +
-                                        if (quest.rewardForce != null) " + Fuerza ${quest.rewardForce}" else "",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = RunicTeal
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun NpcDialogueDialog(
-    npc: NpcSpec,
-    state: GameWorldState,
-    onDismiss: () -> Unit
-) {
-    val quest = npc.questId?.let { qid -> MokayWorldCatalog.quests.firstOrNull { it.id == qid } }
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .widthIn(max = 560.dp)
-                .heightIn(max = 380.dp),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = DeepTwilight),
-            border = BorderStroke(2.dp, AntiqueGold)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = npc.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = SparkGold
-                )
-                Text(
-                    text = "${npc.role} • ${npc.regionId.title}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = BoxyLavender
-                )
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = CardSlate
-                ) {
-                    Text(
-                        text = "\"${npc.dialogue}\"",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = WarmParchment,
-                        modifier = Modifier.padding(12.dp)
-                    )
-                }
-
-                if (quest != null) {
-                    val done = quest.id in state.completedQuests
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (done) StaminaEmerald.copy(alpha = 0.16f) else FlameOrange.copy(alpha = 0.14f),
-                        border = BorderStroke(1.dp, if (done) StaminaEmerald else FlameOrange)
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text(
-                                text = if (done) "Misión Completada: ${quest.title}" else "Misión: ${quest.title}",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = if (done) StaminaEmerald else SparkGold
-                            )
-                            Text(
-                                text = quest.description,
-                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
-                                color = WarmParchment
-                            )
-                        }
-                    }
-                }
-
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = FlameOrange)
-                ) {
-                    Text("Continuar")
                 }
             }
         }

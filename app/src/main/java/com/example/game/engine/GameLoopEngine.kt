@@ -10,7 +10,9 @@ import com.example.game.model.PlayerAnimState
 import com.example.game.model.PuzzleNode
 import com.example.game.model.PuzzleSpec
 import com.example.game.model.PuzzleType
+import com.example.game.model.QuestSpec
 import com.example.game.model.RegionId
+import com.example.game.model.ShopUpgradeKind
 import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
@@ -77,6 +79,7 @@ data class GameWorldState(
     val maxStamina: Float = 100f,
     val mana: Float = 80f,
     val maxMana: Float = 100f,
+    val chispas: Int = 60,
     val exhausted: Boolean = false,
     val foskayLightTimer: Float = 0f,
     val foskayActiveTimer: Float = 0f,
@@ -91,12 +94,19 @@ data class GameWorldState(
     val collectedBookIds: Set<String> = emptySet(),
     val discoveredKeywords: Set<String> = emptySet(),
     val discoveredRegions: Set<RegionId> = setOf(RegionId.PLAZA_INFINITA),
+    val discoveredLandmarkIds: Set<String> = setOf("plaza_center"),
+    val visitedVillages: Set<String> = emptySet(),
+    val activeQuestIds: Set<String> = setOf("q_plaza_spark", "q_tintopolis_cat"),
     val completedQuests: Set<String> = emptySet(),
+    val trackedQuestId: String = "q_tintopolis_cat",
     val solvedPuzzleIds: Set<String> = emptySet(),
     val defeatedBossStages: Set<String> = emptySet(),
     val unlockedGateIds: Set<String> = emptySet(),
     val collectedForces: Set<String> = emptySet(),
     val collectedPickupIds: Set<String> = emptySet(),
+    val npcRelationships: Map<String, Int> = emptyMap(),
+    val claimedDialogueChoices: Set<String> = emptySet(),
+    val unlockedAchievementIds: Set<String> = emptySet(),
     val activePuzzleProgress: Map<String, Set<String>> = emptyMap(),
     val blockPositions: Map<String, Pair<Float, Float>> = emptyMap(),
     val floraWiggleTimers: Map<String, Float> = emptyMap(),
@@ -106,12 +116,17 @@ data class GameWorldState(
     val nearestLandmarkName: String = "Fuente Infinita",
     val nearbyNpc: NpcSpec? = null,
     val nearbyGate: GateSpec? = null,
-    val toastMessage: String? = null
+    val toastMessage: String? = null,
+    val hapticTick: Int = 0
 )
 
 object GameLoopEngine {
 
-    fun spawnRegionEntities(state: GameWorldState, regionId: RegionId): GameWorldState {
+    fun spawnRegionEntities(
+        state: GameWorldState,
+        regionId: RegionId,
+        refreshRespawningPickups: Boolean = false
+    ): GameWorldState {
         val region = MokayRegionsCatalog.regions.getValue(regionId)
         val enemies = region.enemies
             .filter { e -> e.bossStageId == null || e.bossStageId !in state.defeatedBossStages }
@@ -148,12 +163,32 @@ object GameLoopEngine {
             hypot((it.x - state.playerX).toDouble(), (it.y - state.playerY).toDouble())
         }?.name ?: region.id.title
 
+        val nextPicked = if (refreshRespawningPickups) {
+            val respawningInDest = region.pickups.filter { it.respawns }.map { it.id }.toSet()
+            state.collectedPickupIds - respawningInDest
+        } else {
+            state.collectedPickupIds
+        }
+
+        val initialLandmarks = region.landmarks.filter { lm ->
+            val threshold = max(lm.width, lm.height) * 0.60f + 90f
+            hypot((lm.x - state.playerX).toDouble(), (lm.y - state.playerY).toDouble()).toFloat() <= threshold
+        }.map { it.id }.toSet()
+
+        val initialVillages = region.npcs.filter { npc ->
+            npc.villageName.isNotBlank() &&
+                hypot((npc.x - state.playerX).toDouble(), (npc.y - state.playerY).toDouble()).toFloat() <= 210f
+        }.map { it.villageName }.toSet()
+
         return state.copy(
             currentRegionId = regionId,
             discoveredRegions = state.discoveredRegions + regionId,
+            discoveredLandmarkIds = state.discoveredLandmarkIds + initialLandmarks,
+            visitedVillages = state.visitedVillages + initialVillages,
             activeEnemies = enemies,
             blockPositions = state.blockPositions + blocks,
-            nearestLandmarkName = landmark
+            nearestLandmarkName = landmark,
+            collectedPickupIds = nextPicked
         )
     }
 
@@ -296,6 +331,9 @@ object GameLoopEngine {
         // Cuphead flora reactive wobble + automatic pickups + pressure plates
         s = handlePickupsPlatesAndFlora(s, region)
 
+        // Track newly discovered landmarks & visited villages
+        s = handleExplorationDiscovery(s, region)
+
         // Update enemies & boss AI
         s = updateEnemies(s, region.worldWidth, region.worldHeight, dt)
 
@@ -343,11 +381,13 @@ object GameLoopEngine {
         val forces = s.collectedForces.toMutableSet()
         val banners = s.floatingTexts.toMutableList()
 
+        var chispasGained = 0
         region.pickups.forEach { p ->
             if (p.id !in picked) {
                 val d = hypot((p.x - s.playerX).toDouble(), (p.y - s.playerY).toDouble())
-                if (d < 46.0) {
+                if (d < 48.0) {
                     picked.add(p.id)
+                    chispasGained += if (p.bookId != null) 25 else 10
                     if (p.bookId != null) {
                         val book = MokayWorldCatalog.books[p.bookId]
                         if (book != null) {
@@ -359,7 +399,7 @@ object GameLoopEngine {
                     } else {
                         inv[p.itemId] = (inv[p.itemId] ?: 0) + p.quantity
                         val itemName = MokayWorldCatalog.items[p.itemId]?.name ?: p.itemId
-                        banners.add(FloatingBanner("+${p.quantity} $itemName", p.x, p.y - 20f, 1.8f, 0xFF4CC37A))
+                        banners.add(FloatingBanner("+${p.quantity} $itemName • +10 Chispas", p.x, p.y - 20f, 1.9f, 0xFF4CC37A))
                     }
                 }
             }
@@ -380,6 +420,7 @@ object GameLoopEngine {
             progress[puz.id] = currentSet
             if (currentSet.size == puz.nodes.size) {
                 solved.add(puz.id)
+                chispasGained += 45
                 puz.rewardItemId?.let { id ->
                     inv[id] = (inv[id] ?: 0) + 1
                     banners.add(FloatingBanner("¡Gruta abierta! +${MokayWorldCatalog.items[id]?.name ?: id}", s.playerX, s.playerY - 40f, 2.4f, 0xFF2EC4B6))
@@ -396,13 +437,55 @@ object GameLoopEngine {
 
         return s.copy(
             inventory = inv,
+            chispas = s.chispas + chispasGained,
             collectedPickupIds = picked,
             collectedBookIds = books,
             discoveredKeywords = keywords,
             collectedForces = forces,
             floatingTexts = banners,
             activePuzzleProgress = progress,
-            solvedPuzzleIds = solved
+            solvedPuzzleIds = solved,
+            hapticTick = if (chispasGained > 0) s.hapticTick + 1 else s.hapticTick
+        )
+    }
+
+    private fun handleExplorationDiscovery(
+        state: GameWorldState,
+        region: com.example.game.model.RegionSpec
+    ): GameWorldState {
+        val discoveredLm = state.discoveredLandmarkIds.toMutableSet()
+        val visited = state.visitedVillages.toMutableSet()
+        val banners = state.floatingTexts.toMutableList()
+        var foundSomething = false
+
+        region.landmarks.forEach { lm ->
+            if (lm.id !in discoveredLm) {
+                val threshold = max(lm.width, lm.height) * 0.55f + 72f
+                val d = hypot((lm.x - state.playerX).toDouble(), (lm.y - state.playerY).toDouble()).toFloat()
+                if (d <= threshold) {
+                    discoveredLm.add(lm.id)
+                    foundSomething = true
+                    banners.add(FloatingBanner("✦ Descubierto: ${lm.name}", lm.x, lm.y - 38f, 2.2f, 0xFFFFC24D))
+                }
+            }
+        }
+
+        region.npcs.forEach { npc ->
+            if (npc.villageName.isNotBlank() && npc.villageName !in visited) {
+                val d = hypot((npc.x - state.playerX).toDouble(), (npc.y - state.playerY).toDouble()).toFloat()
+                if (d <= 195f) {
+                    visited.add(npc.villageName)
+                    foundSomething = true
+                    banners.add(FloatingBanner("⚑ Aldea: ${npc.villageName}", npc.x, npc.y - 44f, 2.0f, 0xFF4CC37A))
+                }
+            }
+        }
+
+        return if (!foundSomething) state else state.copy(
+            discoveredLandmarkIds = discoveredLm,
+            visitedVillages = visited,
+            floatingTexts = banners,
+            hapticTick = state.hapticTick + 1
         )
     }
 
@@ -674,6 +757,7 @@ object GameLoopEngine {
         val banners = state.floatingTexts.toMutableList()
         val particles = state.particles.toMutableList()
         var hitAny = false
+        var chispasEarned = 0
 
         val survivors = mutableListOf<ActiveEnemy>()
         state.activeEnemies.forEach { enemy ->
@@ -701,6 +785,9 @@ object GameLoopEngine {
                 }
 
                 if (newHp <= 0) {
+                    val chispaDrop = if (enemy.isBoss) enemy.tier * 65 else 18 + enemy.tier * 6
+                    chispasEarned += chispaDrop
+                    banners.add(FloatingBanner("+$chispaDrop Chispas", enemy.x, enemy.y - 38f, 1.8f, 0xFFFFC24D))
                     enemy.dropItemId?.let { itemId ->
                         inv[itemId] = (inv[itemId] ?: 0) + 1
                         val itemName = MokayWorldCatalog.items[itemId]?.name ?: itemId
@@ -741,12 +828,149 @@ object GameLoopEngine {
             hitStopTimer = if (hitAny) 0.045f else 0f,
             activeEnemies = survivors,
             inventory = inv,
+            chispas = state.chispas + chispasEarned,
             collectedBookIds = books,
             discoveredKeywords = keywords,
             collectedForces = forces,
             defeatedBossStages = defeatedStages,
             floatingTexts = banners,
-            particles = particles
+            particles = particles,
+            hapticTick = if (hitAny) state.hapticTick + 1 else state.hapticTick
+        )
+    }
+
+    fun isQuestReadyToComplete(state: GameWorldState, quest: QuestSpec): Boolean {
+        if (quest.id in state.completedQuests) return false
+        val hasItem = quest.requiredItemId == null || (state.inventory[quest.requiredItemId] ?: 0) >= quest.requiredCount
+        val hasBook = quest.requiredBookId == null || quest.requiredBookId in state.collectedBookIds
+        val hasBoss = quest.requiredBossStageId == null || quest.requiredBossStageId in state.defeatedBossStages
+        val hasPuzzle = quest.requiredPuzzleId == null || quest.requiredPuzzleId in state.solvedPuzzleIds
+        val hasRegion = quest.requiredRegionVisit == null || quest.requiredRegionVisit in state.discoveredRegions
+        val hasForces = quest.requiredForces.all { it in state.collectedForces }
+        return hasItem && hasBook && hasBoss && hasPuzzle && hasRegion && hasForces
+    }
+
+    fun acceptQuest(state: GameWorldState, questId: String): GameWorldState {
+        val quest = MokayWorldCatalog.quests.firstOrNull { it.id == questId } ?: return state
+        if (quest.id in state.completedQuests || quest.id in state.activeQuestIds) return state
+        return state.copy(
+            activeQuestIds = state.activeQuestIds + quest.id,
+            trackedQuestId = quest.id,
+            toastMessage = "Misión aceptada: ${quest.title}"
+        )
+    }
+
+    fun completeQuest(state: GameWorldState, questId: String): GameWorldState {
+        val quest = MokayWorldCatalog.quests.firstOrNull { it.id == questId } ?: return state
+        if (!isQuestReadyToComplete(state, quest)) return state
+
+        val inv = state.inventory.toMutableMap()
+        if (quest.consumeRequiredItem && quest.requiredItemId != null) {
+            val rem = (inv[quest.requiredItemId] ?: 0) - quest.requiredCount
+            if (rem <= 0) inv.remove(quest.requiredItemId) else inv[quest.requiredItemId] = rem
+        }
+        inv[quest.rewardItemId] = (inv[quest.rewardItemId] ?: 0) + quest.rewardQuantity
+
+        val nextMaxHp = (state.maxHp + quest.rewardMaxHpBoost).coerceAtMost(300)
+        val nextMaxStam = (state.maxStamina + quest.rewardMaxStaminaBoost).coerceAtMost(260f)
+        val nextMaxMana = (state.maxMana + quest.rewardMaxManaBoost).coerceAtMost(260f)
+        val nextForces = if (quest.rewardForce != null) state.collectedForces + quest.rewardForce else state.collectedForces
+        val nextCompleted = state.completedQuests + quest.id
+        val nextActive = state.activeQuestIds - quest.id
+        val nextTracked = nextActive.firstOrNull()
+            ?: MokayWorldCatalog.quests.firstOrNull { it.id !in nextCompleted }?.id
+            ?: quest.id
+
+        return state.copy(
+            activeQuestIds = nextActive,
+            completedQuests = nextCompleted,
+            trackedQuestId = nextTracked,
+            inventory = inv,
+            chispas = state.chispas + quest.rewardChispas,
+            collectedForces = nextForces,
+            maxHp = nextMaxHp,
+            hp = min(nextMaxHp, state.hp + quest.rewardMaxHpBoost),
+            maxStamina = nextMaxStam,
+            stamina = min(nextMaxStam, state.stamina + quest.rewardMaxStaminaBoost),
+            maxMana = nextMaxMana,
+            mana = min(nextMaxMana, state.mana + quest.rewardMaxManaBoost),
+            toastMessage = "¡Misión completada: ${quest.title}! (+${quest.rewardChispas} Chispas)",
+            hapticTick = state.hapticTick + 1
+        )
+    }
+
+    fun purchaseShopOffer(
+        state: GameWorldState,
+        offerId: String,
+        discountPercent: Int = 0
+    ): GameWorldState {
+        val offer = MokayWorldCatalog.shopOffers.firstOrNull { it.id == offerId } ?: return state
+        val effectivePrice = (offer.priceChispas * (100 - discountPercent.coerceIn(0, 50)) / 100)
+            .coerceAtLeast(1)
+        if (state.chispas < effectivePrice) {
+            return state.copy(toastMessage = "Faltan Chispas ($effectivePrice requeridas).")
+        }
+        if (offer.itemId != null) {
+            val inv = state.inventory.toMutableMap()
+            inv[offer.itemId] = (inv[offer.itemId] ?: 0) + offer.quantity
+            return state.copy(
+                chispas = state.chispas - effectivePrice,
+                inventory = inv,
+                toastMessage = "Comprado: x${offer.quantity} ${offer.title}",
+                hapticTick = state.hapticTick + 1
+            )
+        }
+        return when (offer.upgradeKind) {
+            ShopUpgradeKind.MAX_HP -> {
+                if (state.maxHp >= 220) return state.copy(toastMessage = "Ya alcanzaste el máximo de Vida de tienda.")
+                val newMax = min(220, state.maxHp + offer.upgradeAmount)
+                state.copy(
+                    chispas = state.chispas - effectivePrice,
+                    maxHp = newMax,
+                    hp = newMax,
+                    toastMessage = "¡Vida máxima aumentada a $newMax!",
+                    hapticTick = state.hapticTick + 1
+                )
+            }
+            ShopUpgradeKind.MAX_STAMINA -> {
+                if (state.maxStamina >= 200f) return state.copy(toastMessage = "Ya alcanzaste el máximo de Estamina de tienda.")
+                val newMax = min(200f, state.maxStamina + offer.upgradeAmount)
+                state.copy(
+                    chispas = state.chispas - effectivePrice,
+                    maxStamina = newMax,
+                    stamina = newMax,
+                    toastMessage = "¡Estamina máxima aumentada a ${newMax.toInt()}!",
+                    hapticTick = state.hapticTick + 1
+                )
+            }
+            ShopUpgradeKind.MAX_MANA -> {
+                if (state.maxMana >= 200f) return state.copy(toastMessage = "Ya alcanzaste el máximo de Magia de tienda.")
+                val newMax = min(200f, state.maxMana + offer.upgradeAmount)
+                state.copy(
+                    chispas = state.chispas - effectivePrice,
+                    maxMana = newMax,
+                    mana = newMax,
+                    toastMessage = "¡Magia máxima aumentada a ${newMax.toInt()}!",
+                    hapticTick = state.hapticTick + 1
+                )
+            }
+            null -> state
+        }
+    }
+
+    fun discardItem(state: GameWorldState, itemId: String, amount: Int = 1): GameWorldState {
+        val spec = MokayWorldCatalog.items[itemId] ?: return state
+        if (spec.category == com.example.game.model.ItemCategory.QUEST) {
+            return state.copy(toastMessage = "Las reliquias de misión no se pueden descartar.")
+        }
+        val current = state.inventory[itemId] ?: 0
+        if (current <= 0) return state
+        val inv = state.inventory.toMutableMap()
+        val rem = current - amount
+        if (rem <= 0) inv.remove(itemId) else inv[itemId] = rem
+        return state.copy(
+            inventory = inv,
+            toastMessage = "Descartado: ${spec.name}"
         )
     }
 

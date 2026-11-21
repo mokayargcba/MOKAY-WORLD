@@ -25,13 +25,29 @@
           "type": "integer",
           "description": "Current health points."
         },
+        "maxHp": {
+          "type": "integer",
+          "description": "Maximum health points including upgrades."
+        },
         "stamina": {
           "type": "integer",
           "description": "Current stamina energy."
         },
+        "maxStamina": {
+          "type": "integer",
+          "description": "Maximum stamina energy including upgrades."
+        },
         "mana": {
           "type": "integer",
           "description": "Current magic reserve for summoning Foskay."
+        },
+        "maxMana": {
+          "type": "integer",
+          "description": "Maximum magic reserve including upgrades."
+        },
+        "chispas": {
+          "type": "integer",
+          "description": "Mokaya Spark currency earned from quests, pickups, and combat."
         },
         "inventory": {
           "type": "object",
@@ -53,9 +69,25 @@
           "type": "array",
           "description": "Visited or revealed region IDs on the world map."
         },
+        "discoveredLandmarkIds": {
+          "type": "array",
+          "description": "IDs of landmarks discovered by Boxy and Foskay across Mokaya."
+        },
+        "visitedVillages": {
+          "type": "array",
+          "description": "Names of villages and neighborhoods visited across the 11 regions."
+        },
+        "activeQuestIds": {
+          "type": "array",
+          "description": "Accepted and currently active quest IDs."
+        },
         "completedQuests": {
           "type": "array",
           "description": "Completed quest IDs."
+        },
+        "trackedQuestId": {
+          "type": "string",
+          "description": "Currently pinned quest ID on the HUD."
         },
         "solvedPuzzleIds": {
           "type": "array",
@@ -72,6 +104,18 @@
         "collectedForces": {
           "type": "array",
           "description": "Ancestral forces gathered (creatividad, valentia, curiosidad, amistad)."
+        },
+        "collectedPickupIds": {
+          "type": "array",
+          "description": "IDs of world pickups already collected."
+        },
+        "npcRelationships": {
+          "type": "object",
+          "description": "Map of NPC IDs to integer relationship affinity scores (-100 to 100)."
+        },
+        "unlockedAchievementIds": {
+          "type": "array",
+          "description": "IDs of progression achievements unlocked by the player."
         },
         "createdAt": {
           "type": "string",
@@ -90,18 +134,29 @@
         "playerX",
         "playerY",
         "hp",
+        "maxHp",
         "stamina",
+        "maxStamina",
         "mana",
+        "maxMana",
+        "chispas",
         "inventory",
         "quickSlots",
         "collectedBookIds",
         "discoveredKeywords",
         "discoveredRegions",
+        "discoveredLandmarkIds",
+        "visitedVillages",
+        "activeQuestIds",
         "completedQuests",
+        "trackedQuestId",
         "solvedPuzzleIds",
         "defeatedBossStages",
         "unlockedGateIds",
         "collectedForces",
+        "collectedPickupIds",
+        "npcRelationships",
+        "unlockedAchievementIds",
         "createdAt",
         "updatedAt"
       ]

@@ -36,18 +36,29 @@ service cloud.firestore {
              data.playerX is number && data.playerX >= -10000 && data.playerX <= 10000 &&
              data.playerY is number && data.playerY >= -10000 && data.playerY <= 10000 &&
              data.hp is int && data.hp >= 0 && data.hp <= 500 &&
+             data.maxHp is int && data.maxHp >= 50 && data.maxHp <= 500 &&
              data.stamina is int && data.stamina >= 0 && data.stamina <= 500 &&
+             data.maxStamina is int && data.maxStamina >= 50 && data.maxStamina <= 500 &&
              data.mana is int && data.mana >= 0 && data.mana <= 500 &&
+             data.maxMana is int && data.maxMana >= 50 && data.maxMana <= 500 &&
+             data.chispas is int && data.chispas >= 0 && data.chispas <= 999999 &&
              data.inventory is map && data.inventory.size() <= 100 &&
              isBoundedStringList(data.quickSlots, 5) &&
              isBoundedStringList(data.collectedBookIds, 30) &&
              isBoundedStringList(data.discoveredKeywords, 30) &&
              isBoundedStringList(data.discoveredRegions, 20) &&
+             isBoundedStringList(data.discoveredLandmarkIds, 120) &&
+             isBoundedStringList(data.visitedVillages, 120) &&
+             isBoundedStringList(data.activeQuestIds, 50) &&
              isBoundedStringList(data.completedQuests, 50) &&
+             data.trackedQuestId is string && data.trackedQuestId.size() <= 64 &&
              isBoundedStringList(data.solvedPuzzleIds, 50) &&
              isBoundedStringList(data.defeatedBossStages, 20) &&
              isBoundedStringList(data.unlockedGateIds, 30) &&
-             isBoundedStringList(data.collectedForces, 10);
+             isBoundedStringList(data.collectedForces, 10) &&
+             isBoundedStringList(data.collectedPickupIds, 200) &&
+             data.npcRelationships is map && data.npcRelationships.size() <= 60 &&
+             isBoundedStringList(data.unlockedAchievementIds, 40);
     }
 
     match /users/{userId}/saves/{saveId} {
@@ -59,17 +70,27 @@ service cloud.firestore {
                        incoming().userId == request.auth.uid &&
                        incoming().keys().hasAll([
                          'userId', 'currentRegionId', 'playerX', 'playerY',
-                         'hp', 'stamina', 'mana', 'inventory', 'quickSlots',
+                         'hp', 'maxHp', 'stamina', 'maxStamina', 'mana', 'maxMana',
+                         'chispas', 'inventory', 'quickSlots',
                          'collectedBookIds', 'discoveredKeywords', 'discoveredRegions',
-                         'completedQuests', 'solvedPuzzleIds', 'defeatedBossStages',
-                         'unlockedGateIds', 'collectedForces', 'createdAt', 'updatedAt'
+                         'discoveredLandmarkIds', 'visitedVillages',
+                         'activeQuestIds', 'completedQuests', 'trackedQuestId',
+                         'solvedPuzzleIds', 'defeatedBossStages',
+                         'unlockedGateIds', 'collectedForces', 'collectedPickupIds',
+                         'npcRelationships', 'unlockedAchievementIds',
+                         'createdAt', 'updatedAt'
                        ]) &&
                        incoming().keys().hasOnly([
                          'userId', 'currentRegionId', 'playerX', 'playerY',
-                         'hp', 'stamina', 'mana', 'inventory', 'quickSlots',
+                         'hp', 'maxHp', 'stamina', 'maxStamina', 'mana', 'maxMana',
+                         'chispas', 'inventory', 'quickSlots',
                          'collectedBookIds', 'discoveredKeywords', 'discoveredRegions',
-                         'completedQuests', 'solvedPuzzleIds', 'defeatedBossStages',
-                         'unlockedGateIds', 'collectedForces', 'createdAt', 'updatedAt'
+                         'discoveredLandmarkIds', 'visitedVillages',
+                         'activeQuestIds', 'completedQuests', 'trackedQuestId',
+                         'solvedPuzzleIds', 'defeatedBossStages',
+                         'unlockedGateIds', 'collectedForces', 'collectedPickupIds',
+                         'npcRelationships', 'unlockedAchievementIds',
+                         'createdAt', 'updatedAt'
                        ]) &&
                        incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
                        incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
@@ -83,10 +104,15 @@ service cloud.firestore {
                        isValidGameSave(incoming()) &&
                        incoming().diff(existing()).affectedKeys().hasOnly([
                          'currentRegionId', 'playerX', 'playerY',
-                         'hp', 'stamina', 'mana', 'inventory', 'quickSlots',
+                         'hp', 'maxHp', 'stamina', 'maxStamina', 'mana', 'maxMana',
+                         'chispas', 'inventory', 'quickSlots',
                          'collectedBookIds', 'discoveredKeywords', 'discoveredRegions',
-                         'completedQuests', 'solvedPuzzleIds', 'defeatedBossStages',
-                         'unlockedGateIds', 'collectedForces', 'updatedAt'
+                         'discoveredLandmarkIds', 'visitedVillages',
+                         'activeQuestIds', 'completedQuests', 'trackedQuestId',
+                         'solvedPuzzleIds', 'defeatedBossStages',
+                         'unlockedGateIds', 'collectedForces', 'collectedPickupIds',
+                         'npcRelationships', 'unlockedAchievementIds',
+                         'updatedAt'
                        ]);
 
       allow delete: if isOwner(userId) && isValidId(saveId);

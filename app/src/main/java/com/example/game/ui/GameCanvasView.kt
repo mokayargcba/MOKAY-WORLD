@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.example.game.data.MokayRegionsCatalog
 import com.example.game.data.MokayWorldCatalog
 import com.example.game.engine.ActiveEnemy
+import com.example.game.engine.GameLoopEngine
 import com.example.game.engine.GameWorldState
 import com.example.game.model.GateSpec
 import com.example.game.model.HouseSpec
@@ -35,9 +36,11 @@ import com.example.ui.theme.FlameOrange
 import com.example.ui.theme.InkBlack
 import com.example.ui.theme.RunicTeal
 import com.example.ui.theme.SparkGold
+import com.example.ui.theme.StaminaEmerald
 import com.example.ui.theme.WarmParchment
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.sin
 
 private sealed class YSortedDrawable(val sortY: Float) {
@@ -78,7 +81,10 @@ fun GameCanvasView(
                 LandmarkKind.GLOWING_LAKE,
                 LandmarkKind.ANCESTRAL_PORTAL,
                 LandmarkKind.SKATE_PARK,
-                LandmarkKind.BASKET_COURT
+                LandmarkKind.BASKET_COURT,
+                LandmarkKind.MAZE,
+                LandmarkKind.GARDEN,
+                LandmarkKind.PIER
             )
             region.landmarks
                 .filter { it.kind in groundLandmarkKinds }
@@ -188,18 +194,56 @@ fun GameCanvasView(
                     )
                     is YSortedDrawable.PickupItem -> drawWorldPickup(item.spec, state.animPhase)
                     is YSortedDrawable.NpcItem -> {
-                        drawNpcCharacter(item.spec, region.theme, state.animPhase, spriteBank)
+                        val npc = item.spec
+                        drawNpcCharacter(npc, region.theme, state.animPhase, spriteBank)
+
+                        // Quest indicator (! / ?) or shop icon above NPC head
+                        val qSpec = npc.questId?.let { qid ->
+                            MokayWorldCatalog.quests.firstOrNull { it.id == qid }
+                        }
+                        val bob = sin(state.animPhase * 2.2f + npc.x * 0.02f) * 3f
+                        if (qSpec != null && qSpec.id !in state.completedQuests) {
+                            val ready = GameLoopEngine.isQuestReadyToComplete(state, qSpec)
+                            val badgeColor = if (ready) StaminaEmerald else SparkGold
+                            val symbol = if (ready) "?" else "!"
+                            drawCircle(badgeColor, 10f, Offset(npc.x, npc.y - 54f + bob))
+                            drawCircle(InkBlack, 10f, Offset(npc.x, npc.y - 54f + bob), style = Stroke(2f))
+                            val qm = textMeasurer.measure(
+                                symbol,
+                                TextStyle(color = InkBlack, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                            )
+                            drawText(qm, topLeft = Offset(npc.x - qm.size.width / 2f, npc.y - 54f + bob - qm.size.height / 2f))
+                        } else if (npc.offersShop) {
+                            drawCircle(RunicTeal, 8f, Offset(npc.x, npc.y - 52f + bob))
+                            drawCircle(InkBlack, 8f, Offset(npc.x, npc.y - 52f + bob), style = Stroke(1.8f))
+                        }
+
                         val m = textMeasurer.measure(
-                            item.spec.name,
+                            npc.name,
                             TextStyle(color = WarmParchment, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                         )
                         drawRoundRect(
                             InkBlack.copy(alpha = 0.58f),
-                            Offset(item.spec.x - m.size.width / 2f - 4f, item.spec.y + 32f),
+                            Offset(npc.x - m.size.width / 2f - 4f, npc.y + 32f),
                             Size(m.size.width + 8f, m.size.height + 2f),
                             CornerRadius(5f, 5f)
                         )
-                        drawText(m, topLeft = Offset(item.spec.x - m.size.width / 2f, item.spec.y + 33f))
+                        drawText(m, topLeft = Offset(npc.x - m.size.width / 2f, npc.y + 33f))
+
+                        val distToPlayer = hypot((npc.x - state.playerX).toDouble(), (npc.y - state.playerY).toDouble())
+                        if (distToPlayer < 220.0 && npc.villageName.isNotEmpty()) {
+                            val vm = textMeasurer.measure(
+                                npc.villageName,
+                                TextStyle(color = SparkGold, fontSize = 8.5.sp, fontWeight = FontWeight.Bold)
+                            )
+                            drawRoundRect(
+                                InkBlack.copy(alpha = 0.65f),
+                                Offset(npc.x - vm.size.width / 2f - 4f, npc.y + 48f),
+                                Size(vm.size.width + 8f, vm.size.height + 2f),
+                                CornerRadius(4f, 4f)
+                            )
+                            drawText(vm, topLeft = Offset(npc.x - vm.size.width / 2f, npc.y + 49f))
+                        }
                     }
                     is YSortedDrawable.EnemyItem -> drawEnemyOrBoss(item.spec, state.animPhase, spriteBank)
                     is YSortedDrawable.PlayerItem -> drawBoxyCharacter(
