@@ -7,6 +7,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -17,6 +20,7 @@ import com.example.auth.authStateFlow
 import com.example.data.firebase.SaveRepository
 import com.example.game.engine.DialogueManager
 import com.example.game.ui.MokayGameScreen
+import com.example.game.ui.WebGameScreen
 import com.example.game.viewmodel.GameViewModel
 import com.example.ui.theme.MokayWorldTheme
 import com.google.firebase.Firebase
@@ -39,10 +43,19 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val currentUser by Firebase.auth.authStateFlow()
         .collectAsStateWithLifecycle(initialValue = Firebase.auth.currentUser)
+    var showWebVersion by rememberSaveable { mutableStateOf(false) }
+
+    if (showWebVersion) {
+        WebGameScreen(onExitWebMode = { showWebVersion = false })
+        return
+    }
 
     val user = currentUser
     if (user == null) {
-        AuthScreen(onAuthSuccess = {})
+        AuthScreen(
+            onAuthSuccess = {},
+            onOpenWebVersion = { showWebVersion = true }
+        )
     } else {
         key(user.uid) {
             val gameViewModel: GameViewModel = viewModel(
@@ -59,7 +72,10 @@ fun AppNavigation() {
                     }
                 }
             )
-            MokayGameScreen(viewModel = gameViewModel)
+            MokayGameScreen(
+                viewModel = gameViewModel,
+                onOpenWebVersion = { showWebVersion = true }
+            )
         }
     }
 }

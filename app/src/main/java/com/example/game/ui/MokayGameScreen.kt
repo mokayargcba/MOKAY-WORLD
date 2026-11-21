@@ -46,6 +46,7 @@ import kotlinx.coroutines.isActive
 @Composable
 fun MokayGameScreen(
     viewModel: GameViewModel,
+    onOpenWebVersion: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val worldState by viewModel.worldState.collectAsStateWithLifecycle()
@@ -148,7 +149,8 @@ fun MokayGameScreen(
             onOpenGrimoire = { showGrimoire = true },
             onOpenQuests = { showQuests = true },
             onOpenJournal = { showJournal = true },
-            onManualSave = { viewModel.saveNow(showConfirmationToast = true) }
+            onManualSave = { viewModel.saveNow(showConfirmationToast = true) },
+            onOpenWebVersion = onOpenWebVersion
         )
 
         // Region Entrance Title Card Banner

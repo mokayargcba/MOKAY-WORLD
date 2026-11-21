@@ -68,6 +68,11 @@ android {
     includeInApk = false
     includeInBundle = true
   }
+  sourceSets {
+    getByName("main") {
+      assets.srcDirs("src/main/assets", "../web")
+    }
+  }
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files

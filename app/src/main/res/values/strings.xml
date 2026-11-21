@@ -12,4 +12,6 @@
     <string name="tab_crafting">Crafteo</string>
     <string name="tab_quests">Misiones</string>
     <string name="tab_grimoire">Grimorio</string>
+    <string name="play_web_version">Jugar Versión Web (HTML5)</string>
+    <string name="exit_web_version">Nativo</string>
 </resources>

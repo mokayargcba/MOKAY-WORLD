@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Menu
@@ -99,6 +100,7 @@ fun HudAndControls(
     onOpenQuests: () -> Unit,
     onOpenJournal: () -> Unit,
     onManualSave: () -> Unit,
+    onOpenWebVersion: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val activeBoss = state.activeEnemies.firstOrNull { it.isBoss }
@@ -281,6 +283,15 @@ fun HudAndControls(
                         testTag = "open_journal_button",
                         onClick = onOpenJournal
                     )
+                    if (onOpenWebVersion != null) {
+                        HudMenuIconButton(
+                            icon = Icons.Filled.Language,
+                            label = "Web",
+                            tint = RunicTeal,
+                            testTag = "open_web_version_button",
+                            onClick = onOpenWebVersion
+                        )
+                    }
                 }
 
                 MinimapCard(state = state, onClick = onOpenMap)
