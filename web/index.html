@@ -702,6 +702,7 @@
   <div id="modalCard" class="modal-card"></div>
 </div>
 
+<script src="npc-data.js"></script>
 <script>
 (() => {
   'use strict';
@@ -1048,7 +1049,39 @@
     }
   };
 
+  const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+  const convertedAppTrees = {};
+  function appDialogueTree(id) {
+    if (convertedAppTrees[id]) return convertedAppTrees[id];
+    const src = (window.MOKAY_APP_DIALOGUES || {})[id];
+    if (!src) return null;
+    const nodes = {};
+    for (const [nid, n] of Object.entries(src.nodes || {})) {
+      nodes[nid] = {
+        mood: capitalize(n.mood || 'amigable'),
+        text: n.text,
+        choices: (n.choices || []).map(c => ({
+          id: c.id,
+          text: c.text,
+          tone: capitalize(c.tone || ''),
+          delta: c.relationshipDelta || 0,
+          next: c.nextNodeId || null,
+          ...(c.chispasBonus ? { chispas: c.chispasBonus } : {})
+        }))
+      };
+    }
+    convertedAppTrees[id] = {
+      start: src.startNodeId,
+      high: src.highAffinityStartNodeId,
+      low: src.lowAffinityStartNodeId,
+      nodes
+    };
+    return convertedAppTrees[id];
+  }
+
   function getDialogueTree(npc) {
+    const appTree = appDialogueTree(npc.id);
+    if (appTree && appTree.nodes[appTree.start]) return appTree;
     if (DIALOGUE_TREES[npc.id]) return DIALOGUE_TREES[npc.id];
     return {
       start: 's', high: 'warm', low: 'cold',
@@ -1551,6 +1584,52 @@
       ]
     }
   };
+
+  // Replace the placeholder web NPCs with the full cast from the Android app,
+  // keeping web quest wiring where an NPC id already had one.
+  (function mergeAppNpcs() {
+    const appNpcs = window.MOKAY_APP_NPCS || {};
+    const questIds = new Set(QUESTS.map(q => q.id));
+    const usedQuests = new Set();
+    for (const [rid, reg] of Object.entries(REGIONS)) {
+      const list = appNpcs[rid];
+      if (!list || !list.length) continue;
+      const webById = Object.fromEntries((reg.npcs || []).map(n => [n.id, n]));
+      const merged = list.map(a => {
+        const w = webById[a.id] || {};
+        const questId = w.questId || (questIds.has(a.questId) ? a.questId : undefined);
+        if (questId) usedQuests.add(questId);
+        return {
+          ...a,
+          color: w.color || '#B7B0E6',
+          ...(questId ? { questId } : { questId: undefined })
+        };
+      });
+      for (const w of reg.npcs || []) {
+        if (w.questId && !usedQuests.has(w.questId)) {
+          const host = merged.find(n => !n.questId) || merged[0];
+          host.questId = w.questId;
+          usedQuests.add(w.questId);
+        }
+      }
+      reg.npcs = merged;
+    }
+  })();
+
+  const NPC_SPRITES = (() => {
+    const cache = {};
+    return (src) => {
+      if (!src) return null;
+      let im = cache[src];
+      if (!im) {
+        im = new Image();
+        im.decoding = 'async';
+        im.src = src;
+        cache[src] = im;
+      }
+      return im.complete && im.naturalWidth > 0 ? im : null;
+    };
+  })();
 
   const MAP_LINKS = [
     ['constelaria', 'plaza_infinita'],
@@ -4994,6 +5073,21 @@
           ctx.save();
           ctx.translate(n.x, n.y + bob);
           ctx.scale(scaleX, scaleY);
+          const spriteImg = NPC_SPRITES(n.sprite);
+          let labelLift = 29;
+          if (spriteImg) {
+            const targetH = 74;
+            const sw = targetH * (spriteImg.naturalWidth / spriteImg.naturalHeight);
+            if (isGreeting) {
+              ctx.strokeStyle = 'rgba(255, 194, 77, 0.62)'; ctx.lineWidth = 2.2;
+              ctx.beginPath(); ctx.ellipse(0, 22, 24 + Math.abs(greetWave) * 2.5, 8, 0, 0, Math.PI * 2); ctx.stroke();
+            }
+            const facesLeft = state.px < n.x - 10;
+            if (facesLeft) ctx.scale(-1, 1);
+            ctx.drawImage(spriteImg, -sw / 2, 22 - targetH, sw, targetH);
+            labelLift = targetH - 14;
+          }
+          if (!spriteImg) {
           if (isGreeting) {
             ctx.strokeStyle = 'rgba(255, 194, 77, 0.62)'; ctx.lineWidth = 2.2;
             ctx.beginPath(); ctx.arc(0, 0, 23 + Math.abs(greetWave) * 2.5, 0, Math.PI * 2); ctx.stroke();
@@ -5030,14 +5124,15 @@
           ctx.fill();
           ctx.strokeStyle = '#1A1A1A'; ctx.lineWidth = 1.6;
           ctx.beginPath(); ctx.arc(lookX * 0.4, 4.5 + lookY * 0.3, 4.2, 0.15, Math.PI - 0.15); ctx.stroke();
+          }
           ctx.restore();
 
           const lblTxt = isGreeting ? `👋 ${n.name}` : n.name;
           ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center';
           ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(15,11,28,0.92)';
-          ctx.strokeText(lblTxt, n.x, n.y - 29 + bob);
+          ctx.strokeText(lblTxt, n.x, n.y - labelLift + bob);
           ctx.fillStyle = '#FFC24D';
-          ctx.fillText(lblTxt, n.x, n.y - 29 + bob);
+          ctx.fillText(lblTxt, n.x, n.y - labelLift + bob);
         }
       });
     }
